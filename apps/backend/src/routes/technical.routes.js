@@ -10,6 +10,7 @@ import {
   getSessionLeaderboard,
   updateSessionStatus,
   changeCurrentLift,
+  updateAthleteMedal,
 } from '../controllers/technical.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -70,6 +71,23 @@ router.put(
   [param('sessionId').isUUID(), body('liftType').isIn(['snatch', 'clean_and_jerk'])],
   validate,
   changeCurrentLift
+);
+
+router.put(
+  '/athletes/:athleteId/medal',
+  protect,
+  authorize('admin', 'technical'),
+  [
+    param('athleteId').isUUID(),
+    body('medal').custom((value) => {
+      if (value !== null && !['gold', 'silver', 'bronze'].includes(value)) {
+        throw new Error('Medal must be gold, silver, bronze, or null');
+      }
+      return true;
+    })
+  ],
+  validate,
+  updateAthleteMedal
 );
 
 export default router;

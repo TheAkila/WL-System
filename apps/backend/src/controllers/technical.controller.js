@@ -285,3 +285,51 @@ export const changeCurrentLift = async (req, res, next) => {
     next(error);
   }
 };
+
+// Update athlete medal (manual override)
+export const updateAthleteMedal = async (req, res, next) => {
+  try {
+    const { athleteId } = req.params;
+    const { medal } = req.body;
+
+    // Validate medal value
+    if (medal !== null && !['gold', 'silver', 'bronze'].includes(medal)) {
+      throw new AppError('Medal must be gold, silver, bronze, or null', 400);
+    }
+
+    const { data, error } = await db.supabase
+      .from('athletes')
+      .update({ 
+        medal,
+        medal_manual_override: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', athleteId)
+      .select('*, team:teams(*), session:sessions(*)')
+      .single();
+
+    if (error) throw new AppError(error.message, 400);
+
+    // Emit socket event to notify all clients
+    const io = req.app.get('io');
+    io.emit('athlete:updated', data);
+    
+    // Also emit leaderboard update for the session
+    if (data.session_id) {
+      const { data: leaderboard } = await db.supabase
+        .from('athletes')
+        .select('*')
+        .eq('session_id', data.session_id)
+        .order('rank', { ascending: true, nullsFirst: false });
+      
+      io.to(`session:${data.session_id}`).emit('leaderboard:updated', leaderboard);
+    }
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

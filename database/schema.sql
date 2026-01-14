@@ -95,6 +95,11 @@ CREATE TABLE athletes (
     sinclair_total DECIMAL(8,2) DEFAULT 0,
     rank INTEGER,
     
+    -- Medal and timing fields
+    medal VARCHAR(10), -- 'gold', 'silver', 'bronze', or NULL
+    total_completed_at TIMESTAMP WITH TIME ZONE, -- When total was first completed
+    medal_manual_override BOOLEAN DEFAULT false, -- Admin can override auto-assignment
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -206,12 +211,15 @@ DECLARE
     v_best_snatch INTEGER;
     v_best_clean_and_jerk INTEGER;
     v_total INTEGER;
+    v_old_total INTEGER;
     v_sinclair DECIMAL;
     v_body_weight DECIMAL;
     v_gender gender_type;
+    v_total_completed_at TIMESTAMP WITH TIME ZONE;
 BEGIN
-    -- Get athlete's bodyweight and gender
-    SELECT body_weight, gender INTO v_body_weight, v_gender
+    -- Get athlete's current total and bodyweight/gender
+    SELECT total, body_weight, gender, total_completed_at 
+    INTO v_old_total, v_body_weight, v_gender, v_total_completed_at
     FROM athletes
     WHERE id = p_athlete_id;
     
@@ -232,6 +240,12 @@ BEGIN
     -- Calculate total
     v_total := v_best_snatch + v_best_clean_and_jerk;
     
+    -- Set total_completed_at timestamp if this is the first time total > 0
+    -- (athlete just completed both lifts)
+    IF v_total > 0 AND (v_old_total = 0 OR v_old_total IS NULL) AND v_total_completed_at IS NULL THEN
+        v_total_completed_at := CURRENT_TIMESTAMP;
+    END IF;
+    
     -- Calculate Sinclair total
     IF v_body_weight IS NOT NULL AND v_body_weight > 0 AND v_total > 0 THEN
         v_sinclair := v_total * calculate_sinclair_coefficient(v_body_weight, v_gender);
@@ -244,28 +258,27 @@ BEGIN
     SET best_snatch = v_best_snatch,
         best_clean_and_jerk = v_best_clean_and_jerk,
         total = v_total,
+        total_completed_at = v_total_completed_at,
         sinclair_total = v_sinclair,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = p_athlete_id;
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to update rankings for a session with tie-breaking
+-- Function to update rankings for a session with official IWF tie-breaking
 CREATE OR REPLACE FUNCTION update_session_rankings(p_session_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    -- Update rankings using ROW_NUMBER with tie-breaking logic:
+    -- Update rankings using official IWF rules:
     -- 1. Higher total wins
-    -- 2. If totals are equal, lighter bodyweight wins
-    -- 3. If still tied, lower start number wins (lifted first)
+    -- 2. If totals are equal, athlete who completed total FIRST wins (earlier timestamp)
     WITH ranked_athletes AS (
         SELECT 
             id,
             ROW_NUMBER() OVER (
                 ORDER BY 
                     total DESC,
-                    body_weight ASC NULLS LAST,
-                    start_number ASC NULLS LAST
+                    total_completed_at ASC NULLS LAST
             ) as new_rank
         FROM athletes
         WHERE session_id = p_session_id
@@ -283,6 +296,42 @@ BEGIN
         updated_at = CURRENT_TIMESTAMP
     WHERE session_id = p_session_id
       AND total = 0;
+      
+    -- Auto-assign medals to top 3 (only if not manually overridden)
+    -- Gold medal (rank 1)
+    UPDATE athletes
+    SET medal = 'gold',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE session_id = p_session_id
+      AND rank = 1
+      AND total > 0
+      AND medal_manual_override = false;
+      
+    -- Silver medal (rank 2)
+    UPDATE athletes
+    SET medal = 'silver',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE session_id = p_session_id
+      AND rank = 2
+      AND total > 0
+      AND medal_manual_override = false;
+      
+    -- Bronze medal (rank 3)
+    UPDATE athletes
+    SET medal = 'bronze',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE session_id = p_session_id
+      AND rank = 3
+      AND total > 0
+      AND medal_manual_override = false;
+      
+    -- Clear medals for athletes ranked 4 or lower (if not manually overridden)
+    UPDATE athletes
+    SET medal = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE session_id = p_session_id
+      AND (rank > 3 OR rank IS NULL)
+      AND medal_manual_override = false;
 END;
 $$ LANGUAGE plpgsql;
 

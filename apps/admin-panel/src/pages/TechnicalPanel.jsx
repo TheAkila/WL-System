@@ -90,6 +90,20 @@ export default function TechnicalPanel() {
     }
   };
 
+  const handleMedalUpdate = async (athleteId, medal) => {
+    try {
+      setLoading(true);
+      await api.put(`/technical/athletes/${athleteId}/medal`, { medal });
+      toast.success(medal ? `${medal.toUpperCase()} medal assigned` : 'Medal removed');
+      await fetchLeaderboard();
+    } catch (error) {
+      console.error('Failed to update medal:', error);
+      toast.error('Failed to update medal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedSession) {
       fetchLiftingOrder();
@@ -206,22 +220,67 @@ export default function TechnicalPanel() {
             <thead>
               <tr className="border-b">
                 <th className="text-left py-2">Rank</th>
+                <th className="text-left py-2">Medal</th>
                 <th className="text-left py-2">Name</th>
                 <th className="text-left py-2">Country</th>
                 <th className="text-right py-2">Snatch</th>
                 <th className="text-right py-2">C&J</th>
                 <th className="text-right py-2 font-bold">Total</th>
+                <th className="text-center py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard.map((athlete) => (
                 <tr key={athlete.athlete_id} className="border-b hover:bg-gray-50">
                   <td className="py-2 font-bold">{athlete.rank || '-'}</td>
+                  <td className="py-2">
+                    {athlete.medal === 'gold' && '🥇'}
+                    {athlete.medal === 'silver' && '🥈'}
+                    {athlete.medal === 'bronze' && '🥉'}
+                  </td>
                   <td className="py-2">{athlete.athlete_name}</td>
                   <td className="py-2">{athlete.country}</td>
                   <td className="py-2 text-right">{athlete.best_snatch || '-'}</td>
                   <td className="py-2 text-right">{athlete.best_clean_and_jerk || '-'}</td>
                   <td className="py-2 text-right font-bold">{athlete.total || 0}</td>
+                  <td className="py-2">
+                    <div className="flex justify-center gap-1">
+                      <button
+                        onClick={() => handleMedalUpdate(athlete.athlete_id, 'gold')}
+                        className="px-2 py-1 text-xs rounded hover:bg-yellow-100 disabled:opacity-50"
+                        disabled={loading || athlete.medal === 'gold'}
+                        title="Assign Gold"
+                      >
+                        🥇
+                      </button>
+                      <button
+                        onClick={() => handleMedalUpdate(athlete.athlete_id, 'silver')}
+                        className="px-2 py-1 text-xs rounded hover:bg-gray-200 disabled:opacity-50"
+                        disabled={loading || athlete.medal === 'silver'}
+                        title="Assign Silver"
+                      >
+                        🥈
+                      </button>
+                      <button
+                        onClick={() => handleMedalUpdate(athlete.athlete_id, 'bronze')}
+                        className="px-2 py-1 text-xs rounded hover:bg-orange-100 disabled:opacity-50"
+                        disabled={loading || athlete.medal === 'bronze'}
+                        title="Assign Bronze"
+                      >
+                        🥉
+                      </button>
+                      {athlete.medal && (
+                        <button
+                          onClick={() => handleMedalUpdate(athlete.athlete_id, null)}
+                          className="px-2 py-1 text-xs rounded hover:bg-red-100 disabled:opacity-50"
+                          disabled={loading}
+                          title="Remove Medal"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

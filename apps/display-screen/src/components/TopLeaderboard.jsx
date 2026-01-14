@@ -13,21 +13,36 @@ export default function TopLeaderboard({ leaderboard }) {
     );
   }
 
-  const getRankColor = (rank) => {
-    switch (rank) {
-      case 1: return 'from-yellow-400 to-yellow-600';
-      case 2: return 'from-gray-300 to-gray-400';
-      case 3: return 'from-orange-400 to-orange-600';
-      default: return 'from-blue-400 to-blue-600';
-    }
-  };
-
-  const getRankBadge = (rank) => {
+  const getRankBadge = (athlete) => {
+    // Show medal if assigned
+    if (athlete.medal === 'gold') return '🥇';
+    if (athlete.medal === 'silver') return '🥈';
+    if (athlete.medal === 'bronze') return '🥉';
+    
+    // Otherwise show rank number
+    const rank = athlete.rank;
     switch (rank) {
       case 1: return '🥇';
       case 2: return '🥈';
       case 3: return '🥉';
       default: return `#${rank}`;
+    }
+  };
+
+  const getRankColor = (athlete) => {
+    // Use medal for color if assigned
+    const medal = athlete.medal;
+    if (medal === 'gold') return 'from-yellow-400 to-yellow-600';
+    if (medal === 'silver') return 'from-gray-300 to-gray-400';
+    if (medal === 'bronze') return 'from-orange-400 to-orange-600';
+    
+    // Otherwise use rank for color
+    const rank = athlete.rank;
+    switch (rank) {
+      case 1: return 'from-yellow-400 to-yellow-600';
+      case 2: return 'from-gray-300 to-gray-400';
+      case 3: return 'from-orange-400 to-orange-600';
+      default: return 'from-blue-400 to-blue-600';
     }
   };
 
@@ -43,17 +58,15 @@ export default function TopLeaderboard({ leaderboard }) {
       {/* Leaderboard List */}
       <div className="flex-1 p-4 space-y-3 overflow-y-auto">
         {leaderboard.map((athlete, index) => {
-          const rank = athlete.rank || index + 1;
-          
           return (
             <div
               key={athlete.athlete_id}
-              className={`bg-gradient-to-r ${getRankColor(rank)} rounded-xl p-4 shadow-lg transform transition-all hover:scale-105`}
+              className={`bg-gradient-to-r ${getRankColor(athlete)} rounded-xl p-4 shadow-lg transform transition-all hover:scale-105`}
             >
               <div className="flex items-center gap-4">
-                {/* Rank Badge */}
+                {/* Rank/Medal Badge */}
                 <div className="text-5xl font-black w-20 text-center">
-                  {getRankBadge(rank)}
+                  {getRankBadge(athlete)}
                 </div>
 
                 {/* Athlete Info */}
