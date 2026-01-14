@@ -1,0 +1,13 @@
+{
+  "name": "common",
+  "version": "1.0.0",
+  "description": "Shared utilities for Lifting Live Arena",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./constants": "./src/constants.js",
+    "./types": "./src/types.js",
+    "./utils": "./src/utils.js"
+  }
+}

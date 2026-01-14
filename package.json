@@ -1,0 +1,50 @@
+{
+  "name": "lifting-live-arena",
+  "version": "1.0.0",
+  "description": "Real-time weightlifting competition management system",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:display\" \"npm run dev:scoreboard\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:admin": "npm run dev --workspace=admin-panel",
+    "dev:display": "npm run dev --workspace=display-screen",
+    "dev:scoreboard": "npm run dev --workspace=scoreboard",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.90.1"
+  }
+}

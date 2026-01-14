@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: lifting-arena-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: lifting-live-arena
+
+  redis:
+    image: redis:7-alpine
+    container_name: lifting-arena-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: lifting-arena-backend
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/lifting-live-arena
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - ./apps/backend/uploads:/app/uploads
+
+  admin-panel:
+    build:
+      context: .
+      dockerfile: apps/admin-panel/Dockerfile
+    container_name: lifting-arena-admin
+    restart: unless-stopped
+    ports:
+      - '3000:80'
+    environment:
+      VITE_API_URL: http://localhost:5000
+      VITE_SOCKET_URL: http://localhost:5000
+    depends_on:
+      - backend
+
+  display-screen:
+    build:
+      context: .
+      dockerfile: apps/display-screen/Dockerfile
+    container_name: lifting-arena-display
+    restart: unless-stopped
+    ports:
+      - '3001:80'
+    environment:
+      VITE_API_URL: http://localhost:5000
+      VITE_SOCKET_URL: http://localhost:5000
+    depends_on:
+      - backend
+
+  scoreboard:
+    build:
+      context: .
+      dockerfile: apps/scoreboard/Dockerfile
+    container_name: lifting-arena-scoreboard
+    restart: unless-stopped
+    ports:
+      - '3002:80'
+    environment:
+      VITE_API_URL: http://localhost:5000
+      VITE_SOCKET_URL: http://localhost:5000
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  default:
+    name: lifting-arena-network
