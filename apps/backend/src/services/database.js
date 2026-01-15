@@ -28,6 +28,9 @@ export const supabaseAnon = createClient(
  * Database service wrapper for Supabase operations
  */
 class DatabaseService {
+  // Expose the supabase client for direct access when needed
+  supabase = supabase;
+
   // =====================================================
   // COMPETITIONS
   // =====================================================

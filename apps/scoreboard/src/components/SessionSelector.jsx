@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { Loader2, Trophy, Users, Weight, Calendar } from 'lucide-react';
 
 export default function SessionSelector({ onSelectSession }) {
   const [sessions, setSessions] = useState([]);
@@ -22,51 +23,67 @@ export default function SessionSelector({ onSelectSession }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="animate-spin text-4xl mb-3">⏳</div>
-        <p className="text-gray-600">Loading sessions...</p>
+      <div className="bg-white border border-black p-12 text-center">
+        <Loader2 className="w-12 h-12 text-black animate-spin mx-auto mb-4" />
+        <p className="font-body text-black text-lg">Loading sessions...</p>
       </div>
     );
   }
 
   if (sessions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-5xl mb-3">🏋️</div>
-        <p className="text-gray-600 mb-2">No active sessions</p>
-        <p className="text-sm text-gray-500">Check back when a session starts</p>
+      <div className="bg-white border border-black p-12 text-center">
+        <div className="w-20 h-20 bg-black flex items-center justify-center mx-auto mb-6">
+          <Trophy className="w-10 h-10 text-white" />
+        </div>
+        <h3 className="font-heading text-3xl font-black text-black mb-3">
+          No Active Sessions
+        </h3>
+        <p className="font-body text-black">Check back when a session starts</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-lg font-bold mb-4">Select a Session</h2>
-      <div className="space-y-3">
+    <div className="bg-white border border-black p-6">
+      <h2 className="font-heading text-3xl font-black text-black mb-6 tracking-tight">Select a Session</h2>
+      <div className="space-y-4">
         {sessions.map((session) => (
           <button
             key={session.id}
             onClick={() => onSelectSession(session)}
-            className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
+            className="w-full text-left p-6 border-2 border-black bg-white hover:bg-black hover:text-white transition-all group"
           >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold">{session.name}</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading text-xl font-black text-black group-hover:text-white transition-colors tracking-tight">
+                {session.name}
+              </h3>
               <span
-                className={`px-2 py-1 text-xs rounded-full ${
+                className={`px-4 py-2 text-xs font-ui font-bold uppercase tracking-widest ${
                   session.status === 'in-progress'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-black text-white group-hover:bg-white group-hover:text-black'
+                    : 'bg-gray-200 text-black group-hover:bg-white'
                 }`}
               >
-                {session.status}
+                {session.status === 'in-progress' ? 'Live' : session.status}
               </span>
             </div>
-            <p className="text-sm text-gray-600">
-              {session.gender === 'male' ? '🚹 Men' : '🚺 Women'} •{' '}
-              {session.weight_category}kg
-            </p>
+            <div className="flex items-center gap-3 font-ui text-sm text-black group-hover:text-white">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                {session.gender === 'male' ? 'Men' : 'Women'}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <Weight className="w-4 h-4" />
+                {session.weight_category}kg
+              </span>
+            </div>
             {session.competition && (
-              <p className="text-xs text-gray-500 mt-1">{session.competition.name}</p>
+              <p className="font-body text-xs text-gray-600 group-hover:text-white mt-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                {session.competition.name}
+              </p>
             )}
           </button>
         ))}

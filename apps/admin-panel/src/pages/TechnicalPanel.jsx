@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socketService from '../services/socket';
 import toast from 'react-hot-toast';
+import { Monitor, RotateCw } from 'lucide-react';
 import SessionSelector from '../components/technical/SessionSelector';
 import LiftingOrder from '../components/technical/LiftingOrder';
 import AttemptControl from '../components/technical/AttemptControl';
@@ -156,28 +157,40 @@ export default function TechnicalPanel() {
   if (!selectedSession) {
     return (
       <div>
-        <h1 className="text-3xl font-bold mb-8">Technical Panel</h1>
-        <SessionSelector onSelectSession={setSelectedSession} />
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-black text-white rounded-lg">
+              <Monitor size={32} />
+            </div>
+            <div>
+              <h1 className="font-heading text-5xl font-black text-black">TECHNICAL PANEL</h1>
+              <p className="font-ui text-sm font-bold text-gray-600 uppercase tracking-widest mt-2">Live competition control</p>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <SessionSelector onSelectSession={setSelectedSession} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header with session info */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{selectedSession.name}</h1>
-          <p className="text-gray-600 mt-1">
-            {selectedSession.gender === 'male' ? 'Men' : 'Women'} •{' '}
-            {selectedSession.weight_category}kg
+          <h1 className="font-heading text-4xl font-black text-black">{selectedSession.name}</h1>
+          <p className="font-ui text-sm font-bold text-gray-600 uppercase tracking-widest mt-2">
+            {selectedSession.gender === 'male' ? 'Men' : 'Women'} • {selectedSession.weight_category}kg
           </p>
         </div>
         <button
           onClick={() => setSelectedSession(null)}
           className="btn btn-secondary"
         >
-          Change Session
+          <RotateCw size={20} />
+          <span>Change Session</span>
         </button>
       </div>
 
@@ -188,10 +201,10 @@ export default function TechnicalPanel() {
       <CurrentLiftDisplay session={selectedSession} />
 
       {/* Main Panel Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left: Lifting Order */}
         <div className="card">
-          <h2 className="text-2xl font-bold mb-4">Lifting Order</h2>
+          <h2 className="font-heading text-2xl font-black text-black mb-6 uppercase tracking-widest">Lifting Order</h2>
           <LiftingOrder
             athletes={liftingOrder}
             currentAttempt={currentAttempt}
@@ -202,7 +215,7 @@ export default function TechnicalPanel() {
 
         {/* Right: Attempt Control */}
         <div className="card">
-          <h2 className="text-2xl font-bold mb-4">Attempt Control</h2>
+          <h2 className="font-heading text-2xl font-black text-black mb-6 uppercase tracking-widest">Attempt Control</h2>
           <AttemptControl
             currentAttempt={currentAttempt}
             onGoodLift={() => handleQuickDecision('good')}
@@ -214,57 +227,69 @@ export default function TechnicalPanel() {
 
       {/* Leaderboard */}
       <div className="card">
-        <h2 className="text-2xl font-bold mb-4">Current Standings</h2>
+        <h2 className="font-heading text-2xl font-black text-black mb-6 uppercase tracking-widest">Current Standings</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Rank</th>
-                <th className="text-left py-2">Medal</th>
-                <th className="text-left py-2">Name</th>
-                <th className="text-left py-2">Country</th>
-                <th className="text-right py-2">Snatch</th>
-                <th className="text-right py-2">C&J</th>
-                <th className="text-right py-2 font-bold">Total</th>
-                <th className="text-center py-2">Actions</th>
+              <tr className="border-b-4 border-black">
+                <th className="text-left py-4 font-heading font-black text-black">Rank</th>
+                <th className="text-left py-4 font-heading font-black text-black">Medal</th>
+                <th className="text-left py-4 font-heading font-black text-black">Name</th>
+                <th className="text-left py-4 font-heading font-black text-black">Country</th>
+                <th className="text-right py-4 font-heading font-black text-black">Snatch</th>
+                <th className="text-right py-4 font-heading font-black text-black">C&J</th>
+                <th className="text-right py-4 font-heading font-black text-black">Total</th>
+                <th className="text-center py-4 font-heading font-black text-black">Actions</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard.map((athlete) => (
-                <tr key={athlete.athlete_id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 font-bold">{athlete.rank || '-'}</td>
-                  <td className="py-2">
+                <tr key={athlete.athlete_id} className="border-b border-gray-300 hover:bg-gray-100">
+                  <td className="py-4 font-heading font-bold text-black">{athlete.rank || '-'}</td>
+                  <td className="py-4 text-2xl">
                     {athlete.medal === 'gold' && '🥇'}
                     {athlete.medal === 'silver' && '🥈'}
                     {athlete.medal === 'bronze' && '🥉'}
                   </td>
-                  <td className="py-2">{athlete.athlete_name}</td>
-                  <td className="py-2">{athlete.country}</td>
-                  <td className="py-2 text-right">{athlete.best_snatch || '-'}</td>
-                  <td className="py-2 text-right">{athlete.best_clean_and_jerk || '-'}</td>
-                  <td className="py-2 text-right font-bold">{athlete.total || 0}</td>
-                  <td className="py-2">
-                    <div className="flex justify-center gap-1">
+                  <td className="py-4 font-heading font-bold text-black">{athlete.athlete_name}</td>
+                  <td className="py-4 font-ui font-bold text-black">{athlete.country}</td>
+                  <td className="py-4 text-right font-heading font-bold text-black">{athlete.best_snatch || '-'}</td>
+                  <td className="py-4 text-right font-heading font-bold text-black">{athlete.best_clean_and_jerk || '-'}</td>
+                  <td className="py-4 text-right font-heading text-2xl font-black text-black">{athlete.total || 0}</td>
+                  <td className="py-4">
+                    <div className="flex justify-center gap-2">
                       <button
                         onClick={() => handleMedalUpdate(athlete.athlete_id, 'gold')}
-                        className="px-2 py-1 text-xs rounded hover:bg-yellow-100 disabled:opacity-50"
-                        disabled={loading || athlete.medal === 'gold'}
+                        className={`px-3 py-2 rounded-lg text-xl transition-all ${
+                          athlete.medal === 'gold'
+                            ? 'bg-black text-white border-2 border-black'
+                            : 'bg-gray-100 border-2 border-black hover:bg-gray-200'
+                        } disabled:opacity-50`}
+                        disabled={loading}
                         title="Assign Gold"
                       >
                         🥇
                       </button>
                       <button
                         onClick={() => handleMedalUpdate(athlete.athlete_id, 'silver')}
-                        className="px-2 py-1 text-xs rounded hover:bg-gray-200 disabled:opacity-50"
-                        disabled={loading || athlete.medal === 'silver'}
+                        className={`px-3 py-2 rounded-lg text-xl transition-all ${
+                          athlete.medal === 'silver'
+                            ? 'bg-black text-white border-2 border-black'
+                            : 'bg-gray-100 border-2 border-black hover:bg-gray-200'
+                        } disabled:opacity-50`}
+                        disabled={loading}
                         title="Assign Silver"
                       >
                         🥈
                       </button>
                       <button
                         onClick={() => handleMedalUpdate(athlete.athlete_id, 'bronze')}
-                        className="px-2 py-1 text-xs rounded hover:bg-orange-100 disabled:opacity-50"
-                        disabled={loading || athlete.medal === 'bronze'}
+                        className={`px-3 py-2 rounded-lg text-xl transition-all ${
+                          athlete.medal === 'bronze'
+                            ? 'bg-black text-white border-2 border-black'
+                            : 'bg-gray-100 border-2 border-black hover:bg-gray-200'
+                        } disabled:opacity-50`}
+                        disabled={loading}
                         title="Assign Bronze"
                       >
                         🥉
@@ -272,7 +297,7 @@ export default function TechnicalPanel() {
                       {athlete.medal && (
                         <button
                           onClick={() => handleMedalUpdate(athlete.athlete_id, null)}
-                          className="px-2 py-1 text-xs rounded hover:bg-red-100 disabled:opacity-50"
+                          className="px-3 py-2 rounded-lg bg-gray-100 border-2 border-black hover:bg-red-100 transition-all disabled:opacity-50 font-heading font-bold"
                           disabled={loading}
                           title="Remove Medal"
                         >

@@ -9,22 +9,22 @@ export default function AttemptResult({ attempt }) {
     <motion.div
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      className={`rounded-2xl p-12 h-96 flex items-center justify-center ${
-        isGood ? 'bg-gradient-to-br from-green-600 to-green-400' : 'bg-gradient-to-br from-red-600 to-red-400'
+      className={`p-12 h-96 flex items-center justify-center border-4 border-black ${
+        isGood ? 'bg-white' : 'bg-white'
       }`}
     >
       <div className="text-center">
         <motion.div
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 0.5 }}
-          className="text-9xl font-bold mb-6"
+          className="font-heading text-9xl font-black mb-6"
         >
           {isGood ? '✓' : '✗'}
         </motion.div>
-        <div className="text-6xl font-bold">
+        <div className="font-heading text-6xl font-black text-black">
           {isGood ? 'GOOD LIFT!' : 'NO LIFT'}
         </div>
-        <div className="text-4xl mt-6">
+        <div className="font-heading text-4xl mt-6 font-black text-black">
           {attempt.athlete?.name} • {attempt.weight} kg
         </div>
       </div>

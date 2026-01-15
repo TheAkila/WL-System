@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import MedalCard from '../components/MedalCard';
+import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 
 export default function MedalTable() {
   const [medals, setMedals] = useState([]);
@@ -100,52 +101,72 @@ export default function MedalTable() {
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-2">🏅 Medal Table</h2>
-        <p className="text-sm opacity-90">Competition standings by country</p>
+      <div className="bg-white border-b border-black">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-black flex items-center justify-center mx-auto mb-6">
+              <Trophy className="w-10 h-10 text-white" strokeWidth={2.5} />
+            </div>
+            <h1 className="font-heading text-6xl sm:text-7xl md:text-8xl font-black text-black mb-4 tracking-tight">
+              Medal Standings
+            </h1>
+            <p className="font-body text-lg text-black">
+              Competition rankings by country
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Competition Selector */}
-      {competitions.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4">
-          <label className="text-sm font-medium text-gray-700 mb-2 block">
-            Select Competition
-          </label>
-          <select
-            value={selectedCompetition || ''}
-            onChange={(e) => setSelectedCompetition(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {competitions.map((comp) => (
-              <option key={comp.id} value={comp.id}>
-                {comp.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Competition Selector */}
+        {competitions.length > 0 && (
+          <div className="bg-white border border-black p-6">
+            <label className="font-ui text-sm font-bold text-black uppercase tracking-widest mb-3 block">
+              Competition
+            </label>
+            <select
+              value={selectedCompetition || ''}
+              onChange={(e) => setSelectedCompetition(e.target.value)}
+              className="w-full px-4 py-4 bg-white text-black border-2 border-black font-ui font-semibold focus:ring-2 focus:ring-black transition-colors"
+            >
+              {competitions.map((comp) => (
+                <option key={comp.id} value={comp.id}>
+                  {comp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {/* Medal Table */}
-      {loading ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <div className="animate-spin text-4xl mb-3">⏳</div>
-          <p className="text-gray-600">Loading medals...</p>
-        </div>
-      ) : medals.length > 0 ? (
-        <div className="space-y-3">
-          {medals.map((country, index) => (
-            <MedalCard key={country.country} country={country} rank={index + 1} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-          <div className="text-5xl mb-3">🏅</div>
-          <p>No medals awarded yet</p>
-          <p className="text-sm mt-2">Complete sessions to see medal standings</p>
-        </div>
-      )}
+        {/* Medal Table */}
+        {loading ? (
+          <div className="bg-white border border-black p-12 text-center">
+            <Loader2 className="w-12 h-12 text-black animate-spin mx-auto mb-4" />
+            <p className="font-body text-black text-lg">Loading medal standings...</p>
+          </div>
+        ) : medals.length > 0 ? (
+          <div className="space-y-4">
+            {medals.map((country, index) => (
+              <MedalCard key={country.country} country={country} rank={index + 1} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-black p-12 text-center">
+            <div className="w-20 h-20 bg-black flex items-center justify-center mx-auto mb-6">
+              <Medal className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="font-heading text-3xl font-black text-black mb-3">
+              No Medals Yet
+            </h3>
+            <p className="font-body text-black">
+              Complete competition sessions to see medal standings
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

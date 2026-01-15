@@ -1,5 +1,5 @@
 import logger from '../utils/logger.js';
-import db from '../services/database.js';
+import db, { supabase } from '../services/database.js';
 
 let ioInstance = null;
 const realtimeSubscriptions = new Map();
@@ -65,7 +65,7 @@ export const setupSocketIO = (io) => {
 // Set up global realtime subscriptions for all tables
 const setupGlobalRealtimeSubscriptions = (io) => {
   // Subscribe to attempts table changes
-  const attemptsChannel = db.supabase
+  const attemptsChannel = supabase
     .channel('attempts-changes')
     .on(
       'postgres_changes',
@@ -78,7 +78,7 @@ const setupGlobalRealtimeSubscriptions = (io) => {
         logger.info(`📡 Attempt change detected: ${payload.eventType}`);
         
         // Fetch full attempt details with athlete info
-        const { data: attempt, error } = await db.supabase
+        const { data: attempt, error } = await supabase
           .from('attempts')
           .select('*, athlete:athletes(*), session:sessions(*)')
           .eq('id', payload.new?.id || payload.old?.id)
@@ -111,7 +111,7 @@ const setupGlobalRealtimeSubscriptions = (io) => {
     .subscribe();
 
   // Subscribe to athletes table changes (for best lifts, totals, rankings)
-  const athletesChannel = db.supabase
+  const athletesChannel = supabase
     .channel('athletes-changes')
     .on(
       'postgres_changes',
@@ -142,7 +142,7 @@ const setupGlobalRealtimeSubscriptions = (io) => {
     .subscribe();
 
   // Subscribe to sessions table changes
-  const sessionsChannel = db.supabase
+  const sessionsChannel = supabase
     .channel('sessions-changes')
     .on(
       'postgres_changes',
@@ -154,7 +154,7 @@ const setupGlobalRealtimeSubscriptions = (io) => {
       async (payload) => {
         logger.info(`📡 Session change detected - ID: ${payload.new?.id}`);
         
-        const { data: session, error } = await db.supabase
+        const { data: session, error } = await supabase
           .from('sessions')
           .select('*, competition:competitions(*)')
           .eq('id', payload.new?.id)
@@ -190,7 +190,7 @@ const setupSessionRealtimeSubscription = (sessionId, io) => {
 // Broadcast leaderboard update to all clients in a session
 const broadcastLeaderboardUpdate = async (sessionId, io) => {
   try {
-    const { data: leaderboard, error } = await db.supabase
+    const { data: leaderboard, error } = await supabase
       .from('leaderboard')
       .select('*')
       .eq('session_id', sessionId)

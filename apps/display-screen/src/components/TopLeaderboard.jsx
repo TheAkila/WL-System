@@ -1,106 +1,78 @@
 export default function TopLeaderboard({ leaderboard }) {
   if (!leaderboard || leaderboard.length === 0) {
     return (
-      <div className="h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border-2 border-gray-700 p-6">
-        <h3 className="text-3xl font-bold text-white mb-6 border-b-2 border-gray-600 pb-4">
+      <div className="h-full bg-white border-4 border-black p-8">
+        <h3 className="font-heading text-4xl font-black text-black mb-8 border-b-4 border-black pb-4">
           TOP 5 RANKINGS
         </h3>
-        <div className="text-center text-gray-500 mt-12">
+        <div className="text-center text-gray-600 mt-12">
           <div className="text-6xl mb-4">📊</div>
-          <p className="text-xl">No rankings yet</p>
+          <p className="font-heading text-2xl font-black">No rankings yet</p>
         </div>
       </div>
     );
   }
 
-  const getRankBadge = (athlete) => {
-    // Show medal if assigned
-    if (athlete.medal === 'gold') return '🥇';
-    if (athlete.medal === 'silver') return '🥈';
-    if (athlete.medal === 'bronze') return '🥉';
-    
-    // Otherwise show rank number
+  const getRankNumber = (athlete) => {
     const rank = athlete.rank;
-    switch (rank) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      default: return `#${rank}`;
-    }
-  };
-
-  const getRankColor = (athlete) => {
-    // Use medal for color if assigned
-    const medal = athlete.medal;
-    if (medal === 'gold') return 'from-yellow-400 to-yellow-600';
-    if (medal === 'silver') return 'from-gray-300 to-gray-400';
-    if (medal === 'bronze') return 'from-orange-400 to-orange-600';
-    
-    // Otherwise use rank for color
-    const rank = athlete.rank;
-    switch (rank) {
-      case 1: return 'from-yellow-400 to-yellow-600';
-      case 2: return 'from-gray-300 to-gray-400';
-      case 3: return 'from-orange-400 to-orange-600';
-      default: return 'from-blue-400 to-blue-600';
-    }
+    return rank || athlete.athlete_id;
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border-2 border-gray-700 overflow-hidden flex flex-col">
+    <div className="h-full bg-white border-4 border-black overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 border-b-4 border-yellow-500">
-        <h3 className="text-4xl font-black text-white text-center tracking-wider">
+      <div className="bg-black text-white p-8 border-b-4 border-black">
+        <h3 className="font-heading text-4xl font-black text-center tracking-wider">
           TOP 5 RANKINGS
         </h3>
       </div>
 
       {/* Leaderboard List */}
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+      <div className="flex-1 p-4 space-y-2 overflow-y-auto">
         {leaderboard.map((athlete, index) => {
           return (
             <div
               key={athlete.athlete_id}
-              className={`bg-gradient-to-r ${getRankColor(athlete)} rounded-xl p-4 shadow-lg transform transition-all hover:scale-105`}
+              className="bg-white border-2 border-black p-4 hover:bg-gray-100 transition-all"
             >
               <div className="flex items-center gap-4">
-                {/* Rank/Medal Badge */}
-                <div className="text-5xl font-black w-20 text-center">
-                  {getRankBadge(athlete)}
+                {/* Rank Badge */}
+                <div className="bg-black text-white font-heading font-black w-16 h-16 flex items-center justify-center border-2 border-black text-2xl">
+                  #{getRankNumber(athlete)}
                 </div>
 
                 {/* Athlete Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-2xl font-bold text-white truncate">
+                  <div className="font-heading text-2xl font-black text-black truncate">
                     {athlete.athlete_name}
                   </div>
-                  <div className="text-lg text-gray-900 font-semibold">
+                  <div className="font-heading text-lg text-black font-bold">
                     {athlete.country}
                   </div>
                 </div>
 
                 {/* Total Score */}
                 <div className="text-right">
-                  <div className="text-5xl font-black text-white">
+                  <div className="font-heading text-4xl font-black text-black">
                     {athlete.total || 0}
                   </div>
-                  <div className="text-sm font-bold text-gray-900">
+                  <div className="font-heading font-black text-black">
                     kg
                   </div>
                 </div>
               </div>
 
               {/* Lift Details */}
-              <div className="mt-3 grid grid-cols-2 gap-2 bg-black bg-opacity-20 rounded-lg p-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 bg-gray-100 border-2 border-black p-2">
                 <div className="text-center">
-                  <div className="text-xs text-gray-200">Snatch</div>
-                  <div className="text-xl font-bold text-white">
+                  <div className="font-heading text-xs font-black text-black mb-1">SNATCH</div>
+                  <div className="font-heading text-2xl font-black text-black">
                     {athlete.best_snatch || 0}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-gray-200">C&J</div>
-                  <div className="text-xl font-bold text-white">
+                  <div className="font-heading text-xs font-black text-black mb-1">C&J</div>
+                  <div className="font-heading text-2xl font-black text-black">
                     {athlete.best_clean_and_jerk || 0}
                   </div>
                 </div>
@@ -111,8 +83,8 @@ export default function TopLeaderboard({ leaderboard }) {
       </div>
 
       {/* Footer Note */}
-      <div className="bg-gray-900 p-3 text-center border-t-2 border-gray-700">
-        <p className="text-sm text-gray-400">
+      <div className="bg-gray-100 p-4 text-center border-t-4 border-black">
+        <p className="font-ui text-sm font-bold text-black">
           Updated in real-time • Sorted by Total, Bodyweight, Start Number
         </p>
       </div>

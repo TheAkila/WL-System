@@ -7,6 +7,7 @@ import { setupMiddleware } from './middleware/index.js';
 import { setupRoutes } from './routes/index.js';
 import { setupSocketIO } from './socket/index.js';
 import logger from './utils/logger.js';
+import seedDefaultUsers from './utils/seedUsers.js';
 
 dotenv.config();
 
@@ -44,6 +45,11 @@ httpServer.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📡 Socket.IO server ready`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Seed default users on startup (development only)
+  if (process.env.NODE_ENV !== 'production') {
+    seedDefaultUsers().catch(err => logger.error('Seed failed:', err));
+  }
 });
 
 // Graceful shutdown

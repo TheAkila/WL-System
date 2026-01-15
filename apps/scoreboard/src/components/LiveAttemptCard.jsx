@@ -1,58 +1,64 @@
+import { User, Weight, Check, X } from 'lucide-react';
+
 export default function LiveAttemptCard({ attempt }) {
-  if (!attempt || attempt.result !== 'pending') {
+  if (!attempt || !attempt.athlete_name) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 text-center">
-        <div className="text-6xl mb-3 animate-pulse">⏳</div>
-        <p className="text-gray-600 font-medium">Waiting for next attempt...</p>
+      <div className="bg-white border-2 border-black p-12 text-center">
+        <div className="w-20 h-20 bg-black flex items-center justify-center mx-auto mb-6">
+          <Weight className="w-10 h-10 text-white" />
+        </div>
+        <h3 className="font-heading text-3xl font-black text-black mb-3">
+          Waiting for Next Lift
+        </h3>
+        <p className="font-body text-black">
+          The competition will resume shortly
+        </p>
       </div>
     );
   }
 
-  const athlete = attempt.athlete;
-  const liftType = attempt.lift_type === 'snatch' ? 'SNATCH' : 'CLEAN & JERK';
-
   return (
-    <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-lg shadow-xl overflow-hidden">
+    <div className="bg-white border-4 border-black overflow-hidden">
       {/* Header */}
-      <div className="bg-black bg-opacity-20 px-4 py-3 flex items-center justify-between">
-        <span className="text-sm font-bold uppercase tracking-wider">On Platform</span>
-        <span className="bg-white text-purple-900 px-3 py-1 rounded-full text-sm font-bold">
-          Attempt {attempt.attempt_number}/3
-        </span>
+      <div className="bg-black px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-white flex items-center justify-center">
+            <User className="w-6 h-6 text-black" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div className="font-ui text-xs text-white uppercase tracking-widest font-bold">Now Lifting</div>
+            <div className="font-heading text-2xl font-black text-white tracking-tight">{attempt.athlete_name}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="font-ui text-xs text-white uppercase tracking-widest font-bold">Attempt</div>
+          <div className="font-heading text-2xl font-black text-white">{attempt.attempt_number}/3</div>
+        </div>
       </div>
 
-      {/* Athlete Info */}
-      <div className="p-6">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-black mb-2">{athlete?.name || 'Athlete'}</h2>
-          <div className="flex items-center justify-center gap-2 text-lg">
-            <span>{athlete?.country || '🏳️'}</span>
-            <span>•</span>
-            <span>{athlete?.team || 'Team'}</span>
-          </div>
+      {/* Weight Display */}
+      <div className="p-10 text-center bg-gray-100">
+        <div className="font-heading text-8xl sm:text-9xl font-black text-black mb-2 tracking-tighter">
+          {attempt.requested_weight}
         </div>
-
-        {/* Weight Display */}
-        <div className="bg-white text-purple-900 rounded-xl p-6 text-center">
-          <div className="text-sm font-bold text-purple-600 mb-1">{liftType}</div>
-          <div className="text-6xl font-black">{attempt.weight}</div>
-          <div className="text-lg font-bold mt-1">KILOGRAMS</div>
+        <div className="font-ui text-2xl font-bold text-gray-600 uppercase tracking-widest">
+          KILOGRAMS
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mt-4 text-center text-sm">
-          <div>
-            <div className="text-purple-200">Snatch</div>
-            <div className="font-bold text-lg">{athlete?.best_snatch || 0}</div>
-          </div>
-          <div>
-            <div className="text-purple-200">C&J</div>
-            <div className="font-bold text-lg">{athlete?.best_clean_and_jerk || 0}</div>
-          </div>
-          <div>
-            <div className="text-purple-200">Total</div>
-            <div className="font-bold text-lg text-yellow-300">{athlete?.total || 0}</div>
-          </div>
+      {/* Details */}
+      <div className="border-t-2 border-black px-6 py-5 grid grid-cols-3 divide-x-2 divide-black bg-white">
+        <div className="text-center px-4">
+          <div className="font-ui text-xs text-black uppercase tracking-widest mb-2 font-bold">Country</div>
+          <div className="font-heading text-xl font-black text-black">{attempt.country}</div>
+        </div>
+        <div className="text-center px-4">
+          <div className="font-ui text-xs text-black uppercase tracking-widest mb-2 font-bold">Body Weight</div>
+          <div className="font-heading text-xl font-black text-black">{attempt.body_weight}kg</div>
+        </div>
+        <div className="text-center px-4">
+          <div className="font-ui text-xs text-black uppercase tracking-widest mb-2 font-bold">Lift Type</div>
+          <div className="font-heading text-xl font-black text-black">{attempt.lift_type === 'snatch' ? 'Snatch' : 'C&J'}</div>
         </div>
       </div>
     </div>

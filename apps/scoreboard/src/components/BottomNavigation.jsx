@@ -10,22 +10,22 @@ export default function BottomNavigation() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
-      <div className="grid grid-cols-4">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-black z-20">
+      <div className="grid grid-cols-4 max-w-7xl mx-auto">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-3 transition-colors ${
+              `flex flex-col items-center justify-center py-4 px-2 transition-all duration-200 font-ui ${
                 isActive
-                  ? 'text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-blue-600'
+                  ? 'text-white bg-black'
+                  : 'text-black hover:bg-gray-100'
               }`
             }
           >
-            <Icon size={24} strokeWidth={2} />
-            <span className="text-xs mt-1 font-medium">{label}</span>
+            <Icon size={22} strokeWidth={2.5} />
+            <span className="text-[10px] sm:text-xs mt-1.5 font-bold tracking-widest uppercase">{label}</span>
           </NavLink>
         ))}
       </div>

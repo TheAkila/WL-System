@@ -4,6 +4,7 @@ import api from '../services/api';
 import SessionSelector from '../components/SessionSelector';
 import LiveAttemptCard from '../components/LiveAttemptCard';
 import UpcomingAthletes from '../components/UpcomingAthletes';
+import { Trophy, Users, Weight } from 'lucide-react';
 
 export default function LiveView() {
   const [sessionId, setSessionId] = useState(null);
@@ -62,49 +63,78 @@ export default function LiveView() {
 
   if (!sessionId) {
     return (
-      <div className="p-4">
-        <SessionSelector onSelectSession={(s) => {
-          setSessionId(s.id);
-          setSession(s);
-        }} />
+      <div className="min-h-screen bg-white text-black">
+        <div className="px-6 py-16 sm:py-20">
+          <div className="max-w-2xl mx-auto text-center mb-16">
+            <h1 className="font-heading text-6xl sm:text-7xl md:text-8xl font-black mb-6 leading-none tracking-tight">
+              Watch Live
+            </h1>
+            <p className="font-body text-lg sm:text-xl text-black">
+              Select a competition session to follow the action
+            </p>
+          </div>
+          <SessionSelector onSelectSession={(s) => {
+            setSessionId(s.id);
+            setSession(s);
+          }} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      {/* Session Info */}
+    <div className="min-h-screen bg-white text-black pb-20">
+      {/* Session Header */}
       {session && (
-        <div className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-bold text-lg mb-2">{session.name}</h2>
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <span>{session.gender === 'male' ? '🚹 Men' : '🚺 Women'}</span>
-            <span>•</span>
-            <span>{session.weight_category}kg</span>
-            <span>•</span>
-            <span className="uppercase font-semibold text-blue-600">
-              {session.current_lift === 'snatch' ? 'Snatch' : 'Clean & Jerk'}
-            </span>
+        <div className="bg-white border-b border-black sticky top-0 z-10">
+          <div className="px-6 py-6">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1">
+                <h1 className="font-heading text-3xl sm:text-4xl font-black text-black mb-2 tracking-tight">
+                  {session.name}
+                </h1>
+                <div className="flex items-center gap-3 text-sm font-ui text-black">
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4" />
+                    {session.gender === 'male' ? 'Men' : 'Women'}
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1.5">
+                    <Weight className="w-4 h-4" />
+                    {session.weight_category}kg
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 bg-black text-white font-heading text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  {session.current_lift === 'snatch' ? 'Snatch' : 'C&J'}
+                </span>
+              </div>
+            </div>
+            {session.competition && (
+              <p className="font-body text-xs text-gray-600">{session.competition.name}</p>
+            )}
           </div>
-          {session.competition && (
-            <p className="text-xs text-gray-500 mt-2">{session.competition.name}</p>
-          )}
         </div>
       )}
 
-      {/* Current Attempt */}
-      <LiveAttemptCard attempt={currentAttempt} />
+      {/* Main Content */}
+      <div className="px-6 py-8 space-y-8 max-w-2xl mx-auto">
+        {/* Current Attempt */}
+        <LiveAttemptCard attempt={currentAttempt} />
 
-      {/* Upcoming Athletes */}
-      <UpcomingAthletes athletes={liftingOrder.slice(0, 5)} />
+        {/* Upcoming Athletes */}
+        <UpcomingAthletes athletes={liftingOrder.slice(0, 5)} />
 
-      {/* Change Session Button */}
-      <button
-        onClick={() => setSessionId(null)}
-        className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
-      >
-        Change Session
-      </button>
+        {/* Mobile Change Session Button */}
+        <button
+          onClick={() => setSessionId(null)}
+          className="w-full py-4 bg-white border-2 border-black text-black font-ui font-bold hover:bg-black hover:text-white transition-colors"
+        >
+          Change Session
+        </button>
+      </div>
     </div>
   );
 }

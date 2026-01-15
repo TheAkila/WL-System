@@ -1,60 +1,65 @@
-import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import db from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
-export const register = async (req, res, next) => {
-  try {
-    const { name, email, password, role } = req.body;
-
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      throw new AppError('User already exists', 400);
-    }
-
-    const user = await User.create({ name, email, password, role });
-    const token = user.getSignedJwtToken();
-
-    res.status(201).json({
-      success: true,
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-        token,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+// Generate JWT Token
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || '7d',
+  });
 };
 
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
+    if (!email || !password) {
+      throw new AppError('Please provide email and password', 400);
+    }
+
+    // Get user from database
+    const { data: user, error } = await db.supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !user) {
       throw new AppError('Invalid credentials', 401);
     }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      throw new AppError('Invalid credentials', 401);
-    }
-
-    if (!user.isActive) {
+    if (!user.is_active) {
       throw new AppError('Account is deactivated', 403);
     }
 
-    const token = user.getSignedJwtToken();
+    // Verify password
+    let validPassword = false;
+    
+    if (user.password_hash) {
+      // Production: Use bcrypt to verify password hash
+      validPassword = await bcrypt.compare(password, user.password_hash);
+    } else {
+      // Development: Simple password check (TEMPORARY - for demo only!)
+      // In production, all users must have password_hash
+      validPassword = password === 'password123';
+    }
+
+    if (!validPassword) {
+      throw new AppError('Invalid credentials', 401);
+    }
+
+    // Generate token
+    const token = generateToken(user.id);
 
     res.status(200).json({
       success: true,
       data: {
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -67,9 +72,20 @@ export const login = async (req, res, next) => {
   }
 };
 
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
 export const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const { data: user, error } = await db.supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) {
+      throw new AppError('User not found', 404);
+    }
 
     res.status(200).json({
       success: true,
@@ -80,25 +96,14 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-export const updatePassword = async (req, res, next) => {
+// @desc    Logout user / clear cookie
+// @route   POST /api/auth/logout
+// @access  Private
+export const logout = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-
-    const user = await User.findById(req.user.id).select('+password');
-
-    const isMatch = await user.matchPassword(currentPassword);
-    if (!isMatch) {
-      throw new AppError('Current password is incorrect', 401);
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    const token = user.getSignedJwtToken();
-
     res.status(200).json({
       success: true,
-      data: { token },
+      data: {},
     });
   } catch (error) {
     next(error);

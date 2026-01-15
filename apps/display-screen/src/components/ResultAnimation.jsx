@@ -20,23 +20,20 @@ export default function ResultAnimation({ attempt }) {
           // GOOD LIFT Animation
           <div className="text-center">
             <div className="relative">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-green-500 blur-[100px] opacity-50 animate-pulse"></div>
-              
               {/* Main content */}
-              <div className="relative bg-gradient-to-br from-green-400 to-green-600 rounded-[4rem] px-32 py-20 shadow-2xl border-8 border-green-300">
+              <div className="relative bg-white border-8 border-black px-32 py-20 shadow-2xl">
                 <div className="flex items-center gap-12">
                   {/* Check Icon */}
-                  <div className="text-[15rem] leading-none animate-bounce">
+                  <div className="font-heading text-[15rem] leading-none font-black text-black animate-bounce">
                     ✓
                   </div>
                   
                   {/* Text */}
                   <div className="text-left">
-                    <div className="text-[10rem] font-black text-white leading-none mb-4">
+                    <div className="font-heading text-[10rem] font-black text-black leading-none mb-4">
                       GOOD
                     </div>
-                    <div className="text-[10rem] font-black text-green-900 leading-none">
+                    <div className="font-heading text-[10rem] font-black text-black leading-none">
                       LIFT
                     </div>
                   </div>
@@ -45,12 +42,12 @@ export default function ResultAnimation({ attempt }) {
             </div>
 
             {/* Athlete Name */}
-            <div className="mt-12 text-6xl font-bold text-white animate-pulse">
+            <div className="mt-12 font-heading text-6xl font-black text-white animate-pulse">
               {attempt.athlete?.name}
             </div>
             
             {/* Weight */}
-            <div className="mt-6 text-8xl font-black text-green-400">
+            <div className="mt-6 font-heading text-8xl font-black text-white">
               {attempt.weight} kg
             </div>
           </div>
@@ -58,23 +55,20 @@ export default function ResultAnimation({ attempt }) {
           // NO LIFT Animation
           <div className="text-center">
             <div className="relative">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-red-500 blur-[100px] opacity-50 animate-pulse"></div>
-              
               {/* Main content */}
-              <div className="relative bg-gradient-to-br from-red-500 to-red-700 rounded-[4rem] px-32 py-20 shadow-2xl border-8 border-red-400">
+              <div className="relative bg-white border-8 border-black px-32 py-20 shadow-2xl">
                 <div className="flex items-center gap-12">
                   {/* X Icon */}
-                  <div className="text-[15rem] leading-none animate-shake">
+                  <div className="font-heading text-[15rem] leading-none font-black text-black animate-shake">
                     ✗
                   </div>
                   
                   {/* Text */}
                   <div className="text-left">
-                    <div className="text-[10rem] font-black text-white leading-none mb-4">
+                    <div className="font-heading text-[10rem] font-black text-black leading-none mb-4">
                       NO
                     </div>
-                    <div className="text-[10rem] font-black text-red-900 leading-none">
+                    <div className="font-heading text-[10rem] font-black text-black leading-none">
                       LIFT
                     </div>
                   </div>
@@ -83,12 +77,12 @@ export default function ResultAnimation({ attempt }) {
             </div>
 
             {/* Athlete Name */}
-            <div className="mt-12 text-6xl font-bold text-white">
+            <div className="mt-12 font-heading text-6xl font-black text-white">
               {attempt.athlete?.name}
             </div>
             
             {/* Weight */}
-            <div className="mt-6 text-8xl font-black text-red-400">
+            <div className="mt-6 font-heading text-8xl font-black text-white">
               {attempt.weight} kg
             </div>
           </div>

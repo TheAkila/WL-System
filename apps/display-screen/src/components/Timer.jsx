@@ -2,19 +2,25 @@ import { motion } from 'framer-motion';
 
 export default function Timer({ time }) {
   const getColor = () => {
-    if (time <= 10) return 'text-red-500';
-    if (time <= 30) return 'text-yellow-500';
-    return 'text-green-500';
+    if (time <= 10) return 'text-black';
+    if (time <= 30) return 'text-black';
+    return 'text-black';
+  };
+
+  const getBgColor = () => {
+    if (time <= 10) return 'bg-white border-4 border-black';
+    if (time <= 30) return 'bg-white border-4 border-black';
+    return 'bg-white border-4 border-black';
   };
 
   return (
-    <div className="bg-gray-800 rounded-2xl p-8">
+    <div className={`${getBgColor()} p-8`}>
       <div className="text-center">
-        <div className="text-3xl text-gray-400 mb-4">TIME REMAINING</div>
+        <div className="font-heading text-2xl font-black text-black mb-4 tracking-widest">TIME REMAINING</div>
         <motion.div
           animate={{ scale: time <= 10 ? [1, 1.1, 1] : 1 }}
           transition={{ repeat: time <= 10 ? Infinity : 0, duration: 1 }}
-          className={`text-9xl font-bold ${getColor()}`}
+          className={`font-heading text-9xl font-black ${getColor()}`}
         >
           {time}s
         </motion.div>

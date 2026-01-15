@@ -4,32 +4,41 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-white text-black;
+  }
+
+  * {
+    @apply select-none;
   }
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2;
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-black text-white hover:bg-gray-900 border-2 border-black;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+    @apply bg-white text-black hover:bg-gray-100 border-2 border-black;
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply bg-white text-black hover:bg-gray-100 border-2 border-black;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500;
+    @apply w-full px-4 py-3 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black bg-white text-black placeholder-gray-500;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white border-4 border-black rounded-lg p-8;
+  }
+
+  .label {
+    @apply block text-sm font-bold text-black mb-2 uppercase tracking-widest;
   }
 }
+
