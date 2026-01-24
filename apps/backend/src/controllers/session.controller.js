@@ -1,23 +1,33 @@
-import Session from '../models/Session.js';
+import { supabase } from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 export const getSessions = async (req, res, next) => {
   try {
-    const { competitionId, status } = req.query;
+    const { competitionId, status, limit = 50, offset = 0 } = req.query;
     
-    const filter = {};
-    if (competitionId) filter.competition = competitionId;
-    if (status) filter.status = status;
+    // Include competition data and athlete count
+    let query = supabase.from('sessions').select('*, competition:competitions(*)', { count: 'exact' });
 
-    const sessions = await Session.find(filter)
-      .populate('competition')
-      .populate('athletes')
-      .sort('startTime');
+    if (competitionId) query = query.eq('competition_id', competitionId);
+    if (status) query = query.eq('status', status);
+
+    // Add pagination
+    query = query.order('start_time', { ascending: true })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw new AppError(error.message, 400);
 
     res.status(200).json({
       success: true,
-      count: sessions.length,
-      data: sessions,
+      count: count || data?.length || 0,
+      data: data || [],
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: (parseInt(offset) + parseInt(limit)) < (count || 0)
+      }
     });
   } catch (error) {
     next(error);
@@ -26,17 +36,17 @@ export const getSessions = async (req, res, next) => {
 
 export const getSession = async (req, res, next) => {
   try {
-    const session = await Session.findById(req.params.id)
-      .populate('competition')
-      .populate('athletes');
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*, competition:competitions(*)')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!session) {
-      throw new AppError('Session not found', 404);
-    }
+    if (error) throw new AppError('Session not found', 404);
 
     res.status(200).json({
       success: true,
-      data: session,
+      data,
     });
   } catch (error) {
     next(error);
@@ -45,12 +55,46 @@ export const getSession = async (req, res, next) => {
 
 export const createSession = async (req, res, next) => {
   try {
-    const session = await Session.create(req.body);
-    await session.populate('competition athletes');
+    // Auto-assign competition_id if not provided (single competition system)
+    let sessionData = { ...req.body };
+    
+    if (!sessionData.competition_id) {
+      // Get the current active competition
+      const { data: competition } = await supabase
+        .from('competitions')
+        .select('id')
+        .eq('status', 'active')
+        .single();
+      
+      if (competition) {
+        sessionData.competition_id = competition.id;
+      } else {
+        // If no active competition, get the most recent one
+        const { data: recentComp } = await supabase
+          .from('competitions')
+          .select('id')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (recentComp) {
+          sessionData.competition_id = recentComp.id;
+        } else {
+          throw new AppError('No competition found. Please create a competition first.', 400);
+        }
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([sessionData])
+      .select();
+
+    if (error) throw new AppError(error.message, 400);
 
     res.status(201).json({
       success: true,
-      data: session,
+      data: data[0],
     });
   } catch (error) {
     next(error);
@@ -59,34 +103,47 @@ export const createSession = async (req, res, next) => {
 
 export const updateSession = async (req, res, next) => {
   try {
-    const session = await Session.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    }).populate('competition athletes');
+    console.log('📝 updateSession called:', { sessionId: req.params.id, body: req.body, userId: req.user?.id });
+    
+    const { data, error } = await supabase
+      .from('sessions')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select();
 
-    if (!session) {
+    if (error) {
+      console.error('❌ Database error updating session:', error);
+      throw new AppError(error.message, 400);
+    }
+    if (!data || data.length === 0) {
+      console.error('❌ Session not found:', req.params.id);
       throw new AppError('Session not found', 404);
     }
 
+    console.log('✅ Session updated successfully:', { sessionId: data[0].id, newStatus: data[0].status });
+    
     // Emit socket event
-    req.app.get('io').emit('session:updated', session);
+    req.app.get('io').emit('session:updated', data[0]);
+    console.log('📡 Emitted session:updated event');
 
     res.status(200).json({
       success: true,
-      data: session,
+      data: data[0],
     });
   } catch (error) {
+    console.error('🔴 updateSession error:', error.message);
     next(error);
   }
 };
 
 export const deleteSession = async (req, res, next) => {
   try {
-    const session = await Session.findByIdAndDelete(req.params.id);
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', req.params.id);
 
-    if (!session) {
-      throw new AppError('Session not found', 404);
-    }
+    if (error) throw new AppError(error.message, 400);
 
     res.status(200).json({
       success: true,
@@ -99,23 +156,24 @@ export const deleteSession = async (req, res, next) => {
 
 export const startSession = async (req, res, next) => {
   try {
-    const session = await Session.findById(req.params.id);
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ 
+        status: 'in-progress',
+        start_time: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select();
 
-    if (!session) {
-      throw new AppError('Session not found', 404);
-    }
-
-    session.status = 'in-progress';
-    session.startTime = new Date();
-    await session.save();
-    await session.populate('competition athletes');
+    if (error) throw new AppError(error.message, 400);
+    if (!data || data.length === 0) throw new AppError('Session not found', 404);
 
     // Emit socket event
-    req.app.get('io').emit('session:started', session);
+    req.app.get('io').emit('session:started', data[0]);
 
     res.status(200).json({
       success: true,
-      data: session,
+      data: data[0],
     });
   } catch (error) {
     next(error);
@@ -124,23 +182,24 @@ export const startSession = async (req, res, next) => {
 
 export const endSession = async (req, res, next) => {
   try {
-    const session = await Session.findById(req.params.id);
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ 
+        status: 'completed',
+        end_time: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select();
 
-    if (!session) {
-      throw new AppError('Session not found', 404);
-    }
-
-    session.status = 'completed';
-    session.endTime = new Date();
-    await session.save();
-    await session.populate('competition athletes');
+    if (error) throw new AppError(error.message, 400);
+    if (!data || data.length === 0) throw new AppError('Session not found', 404);
 
     // Emit socket event
-    req.app.get('io').emit('session:ended', session);
+    req.app.get('io').emit('session:ended', data[0]);
 
     res.status(200).json({
       success: true,
-      data: session,
+      data: data[0],
     });
   } catch (error) {
     next(error);

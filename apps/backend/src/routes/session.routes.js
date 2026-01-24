@@ -22,9 +22,9 @@ router.post(
   protect,
   authorize('admin', 'technical'),
   [
-    body('competitionId').isMongoId(),
+    body('competition_id').optional().isUUID(),
     body('name').trim().notEmpty(),
-    body('weightCategory').notEmpty(),
+    body('weight_category').notEmpty(),
     body('gender').isIn(['male', 'female']),
   ],
   validate,

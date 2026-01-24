@@ -2,15 +2,18 @@ import express from 'express';
 import { body, param } from 'express-validator';
 import {
   getActiveSessions,
+  getSessionSheet,
   getLiftingOrder,
   declareAttempt,
   recordRefereeDecision,
   recordQuickDecision,
+  recordJuryOverride,
   getCurrentAttempt,
   getSessionLeaderboard,
   updateSessionStatus,
   changeCurrentLift,
   updateAthleteMedal,
+  requestWeightChange,
 } from '../controllers/technical.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -19,6 +22,7 @@ const router = express.Router();
 
 // Public routes (for display screens)
 router.get('/sessions/active', getActiveSessions);
+router.get('/sessions/:sessionId/sheet', getSessionSheet);
 router.get('/sessions/:sessionId/lifting-order', getLiftingOrder);
 router.get('/sessions/:sessionId/current-attempt', getCurrentAttempt);
 router.get('/sessions/:sessionId/leaderboard', getSessionLeaderboard);
@@ -55,11 +59,30 @@ router.post(
   recordQuickDecision
 );
 
+// Jury override - IWF Rule 3.3.5
+router.post(
+  '/attempts/:attemptId/jury-override',
+  protect,
+  authorize('admin'), // Only admins can override
+  [
+    param('attemptId').isUUID(),
+    body('decision').isIn(['good', 'no-lift']),
+    body('reason').notEmpty(),
+  ],
+  validate,
+  recordJuryOverride
+);
+
 router.put(
   '/sessions/:sessionId/status',
   protect,
   authorize('admin', 'technical'),
-  [param('sessionId').isUUID(), body('status').notEmpty()],
+  [
+    param('sessionId').isUUID().withMessage('Invalid session ID'),
+    body('status')
+      .isIn(['scheduled', 'in-progress', 'completed', 'cancelled'])
+      .withMessage('Invalid status. Must be scheduled, in-progress, completed, or cancelled')
+  ],
   validate,
   updateSessionStatus
 );
@@ -88,6 +111,20 @@ router.put(
   ],
   validate,
   updateAthleteMedal
+);
+
+// Weight change request (IWF Rule 6.5.1)
+router.post(
+  '/attempts/weight-change',
+  protect,
+  authorize('admin', 'technical'),
+  [
+    body('athleteId').isUUID(),
+    body('weight').isInt({ min: 1 }),
+    body('liftType').isIn(['snatch', 'clean_and_jerk']),
+  ],
+  validate,
+  requestWeightChange
 );
 
 export default router;

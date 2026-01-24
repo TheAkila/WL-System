@@ -218,9 +218,11 @@ class DatabaseService {
   // =====================================================
 
   async getAttempts(filters = {}) {
+    const { limit = 50, offset = 0 } = filters;
+    
     let query = supabase
       .from('attempts')
-      .select('*, athlete:athletes(*), session:sessions(*)');
+      .select('*, athlete:athletes(*), session:sessions(*)', { count: 'exact' });
 
     if (filters.athleteId) {
       query = query.eq('athlete_id', filters.athleteId);
@@ -232,9 +234,23 @@ class DatabaseService {
       query = query.eq('lift_type', filters.liftType);
     }
 
-    const { data, error } = await query.order('timestamp', { ascending: false });
+    // Add pagination
+    query = query
+      .order('timestamp', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
+    
+    // Add pagination info to response
+    data._pagination = {
+      total: count,
+      limit,
+      offset,
+      hasMore: (offset + limit) < (count || 0)
+    };
+    
     return data;
   }
 

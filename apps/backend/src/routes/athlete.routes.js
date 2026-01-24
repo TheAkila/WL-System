@@ -13,17 +13,16 @@ import { validate } from '../middleware/validator.js';
 const router = express.Router();
 
 router.get('/', getAthletes);
+router.get('/session/:sessionId', getAthletes); // Convenience route for session athletes
 router.get('/:id', getAthlete);
 
 router.post(
   '/',
-  protect,
-  authorize('admin', 'technical'),
   [
-    body('name').trim().notEmpty(),
-    body('country').trim().notEmpty(),
-    body('weightCategory').notEmpty(),
-    body('gender').isIn(['male', 'female']),
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('weight_category').notEmpty().withMessage('Weight category is required'),
+    body('gender').isIn(['male', 'female']).withMessage('Gender must be male or female'),
+    body('session_id').notEmpty().withMessage('Session is required'),
   ],
   validate,
   createAthlete

@@ -525,37 +525,39 @@ CREATE POLICY "Public read access" ON attempts FOR SELECT USING (true);
 -- CREATE POLICY "Admin full access" ON attempts FOR ALL USING (auth.jwt()->>'role' = 'admin');
 
 -- =====================================================
--- SAMPLE DATA (for testing)
+-- SAMPLE DATA (for testing - DISABLED)
 -- =====================================================
+-- NOTE: Sample data auto-insert has been disabled.
+-- Uncomment the queries below if you want to populate test data manually.
 
--- Insert sample competition
-INSERT INTO competitions (name, date, location, status) VALUES
-('National Championships 2026', '2026-03-15', 'Los Angeles, CA', 'active');
+-- -- Insert sample competition
+-- INSERT INTO competitions (name, date, location, status) VALUES
+-- ('National Championships 2026', '2026-03-15', 'Los Angeles, CA', 'active');
 
--- Insert sample teams
-INSERT INTO teams (name, country) VALUES
-('USA Weightlifting', 'USA'),
-('Canadian Weightlifting', 'CAN');
+-- -- Insert sample teams
+-- INSERT INTO teams (name, country) VALUES
+-- ('USA Weightlifting', 'USA'),
+-- ('Canadian Weightlifting', 'CAN');
 
--- Insert sample session
-INSERT INTO sessions (competition_id, name, weight_category, gender, status)
-SELECT id, 'Men 81kg Session', '81', 'male', 'in-progress'
-FROM competitions WHERE name = 'National Championships 2026';
+-- -- Insert sample session
+-- INSERT INTO sessions (competition_id, name, weight_category, gender, status)
+-- SELECT id, 'Men 81kg Session', '81', 'male', 'in-progress'
+-- FROM competitions WHERE name = 'National Championships 2026';
 
--- Insert sample athletes
-INSERT INTO athletes (name, country, gender, weight_category, body_weight, start_number, session_id, team_id)
-SELECT 
-    'John Smith', 'USA', 'male', '81', 80.5, 1, s.id, t.id
-FROM sessions s
-CROSS JOIN teams t
-WHERE s.name = 'Men 81kg Session' AND t.name = 'USA Weightlifting';
+-- -- Insert sample athletes
+-- INSERT INTO athletes (name, country, gender, weight_category, body_weight, start_number, session_id, team_id)
+-- SELECT 
+--     'John Smith', 'USA', 'male', '81', 80.5, 1, s.id, t.id
+-- FROM sessions s
+-- CROSS JOIN teams t
+-- WHERE s.name = 'Men 81kg Session' AND t.name = 'USA Weightlifting';
 
-INSERT INTO athletes (name, country, gender, weight_category, body_weight, start_number, session_id, team_id)
-SELECT 
-    'Mike Johnson', 'CAN', 'male', '81', 80.8, 2, s.id, t.id
-FROM sessions s
-CROSS JOIN teams t
-WHERE s.name = 'Men 81kg Session' AND t.name = 'Canadian Weightlifting';
+-- INSERT INTO athletes (name, country, gender, weight_category, body_weight, start_number, session_id, team_id)
+-- SELECT 
+--     'Mike Johnson', 'CAN', 'male', '81', 80.8, 2, s.id, t.id
+-- FROM sessions s
+-- CROSS JOIN teams t
+-- WHERE s.name = 'Men 81kg Session' AND t.name = 'Canadian Weightlifting';
 
 -- =====================================================
 -- HELPFUL QUERIES

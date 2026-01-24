@@ -1,42 +1,19 @@
-import { useState, useEffect } from 'react';
-import api from '../../services/api';
-import toast from 'react-hot-toast';
-
-export default function SessionSelector({ onSelectSession }) {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
-    try {
-      const response = await api.get('/technical/sessions/active');
-      setSessions(response.data.data || []);
-    } catch (error) {
-      toast.error('Failed to load sessions');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function SessionSelector({ sessions, onSelectSession, loading }) {
   if (loading) {
     return (
-      <div className="card text-center py-12">
-        <div className="text-gray-400 text-4xl mb-4">⏳</div>
-        <p className="text-gray-600">Loading sessions...</p>
+      <div className="text-center py-12">
+        <div className="text-slate-400 dark:text-zinc-500 text-4xl mb-4">⏳</div>
+        <p className="text-slate-600 dark:text-zinc-400">Loading sessions...</p>
       </div>
     );
   }
 
   if (sessions.length === 0) {
     return (
-      <div className="card text-center py-12">
-        <div className="text-gray-400 text-4xl mb-4">📋</div>
-        <p className="text-gray-600 mb-4">No active sessions available</p>
-        <p className="text-sm text-gray-500">Create a session from the Sessions page</p>
+      <div className="text-center py-12">
+        <div className="text-slate-400 dark:text-zinc-500 text-4xl mb-4">📋</div>
+        <p className="text-slate-600 dark:text-zinc-400 mb-4">No sessions available</p>
+        <p className="text-sm text-slate-500 dark:text-zinc-500">Create a session from the Sessions page</p>
       </div>
     );
   }

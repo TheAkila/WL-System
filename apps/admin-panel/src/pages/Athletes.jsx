@@ -1,18 +1,311 @@
-import { Plus, Users, Search } from 'lucide-react';
+import { Plus, Users, Search, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../services/api';
+import toast from 'react-hot-toast';
+import ImageUpload from '../components/ImageUpload';
 
 export default function Athletes() {
+  const [athletes, setAthletes] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    birth_date: '',
+    gender: 'male',
+    weight_category: '',
+    session_id: '',
+    team_id: '',
+  });
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    fetchAthletes();
+    fetchSessions();
+    fetchTeams();
+  }, []);
+
+  const fetchAthletes = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/athletes');
+      setAthletes(response.data.data || []);
+    } catch (error) {
+      toast.error('Failed to load athletes');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      const response = await api.get('/sessions');
+      const data = response.data.data || [];
+      console.log('Loaded sessions:', data.length);
+      setSessions(data);
+      if (data.length === 0) {
+        console.warn('No sessions available');
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+      toast.error('Failed to load sessions');
+      setSessions([]);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const response = await api.get('/teams');
+      const data = response.data.data || [];
+      console.log('Loaded teams:', data.length);
+      setTeams(data);
+    } catch (error) {
+      console.error('Failed to load teams:', error);
+      toast.error('Failed to load teams');
+      setTeams([]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name?.trim()) {
+      toast.error('Athlete name is required');
+      return;
+    }
+    if (!formData.gender) {
+      toast.error('Gender is required');
+      return;
+    }
+    if (!formData.weight_category) {
+      toast.error('Weight category is required');
+      return;
+    }
+    if (!formData.session_id) {
+      toast.error('Please select a session');
+      return;
+    }
+
+    try {
+      // Ensure we're sending the correct data format
+      const submitData = {
+        name: formData.name.trim(),
+        birth_date: formData.birth_date || null,
+        gender: formData.gender,
+        weight_category: formData.weight_category,
+        session_id: formData.session_id,
+        team_id: formData.team_id || null,
+      };
+
+      if (editingId) {
+        await api.put(`/athletes/${editingId}`, submitData);
+        toast.success('Athlete updated');
+      } else {
+        await api.post('/athletes', submitData);
+        toast.success('Athlete registered successfully!');
+      }
+      resetForm();
+      setShowForm(false);
+      fetchAthletes();
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || error.message;
+      console.error('Registration error:', error);
+      toast.error(editingId ? `Failed to update athlete: ${errorMsg}` : `Failed to register athlete: ${errorMsg}`);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      birth_date: '',
+      gender: 'male',
+      weight_category: '',
+      session_id: '',
+      team_id: '',
+    });
+    setEditingId(null);
+  };
+
+  const handleEdit = (athlete) => {
+    setFormData(athlete);
+    setEditingId(athlete.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure?')) {
+      try {
+        await api.delete(`/athletes/${id}`);
+        toast.success('Athlete deleted');
+        fetchAthletes();
+      } catch (error) {
+        toast.error('Failed to delete athlete');
+      }
+    }
+  };
+
+  const filteredAthletes = athletes
+    .filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((a) => genderFilter === 'all' || a.gender === genderFilter);
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-5xl font-black text-black mb-2">ATHLETES</h1>
-          <p className="font-ui text-sm font-bold text-gray-600 uppercase tracking-widest">Manage athlete registrations</p>
+          <h1 className="text-4xl font-heading font-bold text-slate-900 dark:text-white mb-2">Athletes</h1>
+          <p className="text-slate-600 dark:text-zinc-400 font-ui">Register athletes • Body weight will be recorded during official weigh-in</p>
         </div>
-        <button className="btn btn-primary">
+        <button
+          onClick={() => {
+            resetForm();
+            setShowForm(!showForm);
+          }}
+          className="btn btn-primary flex items-center gap-2"
+        >
           <Plus size={20} />
-          <span>Register Athlete</span>
+          <span>{showForm ? 'Cancel' : 'Register Athlete'}</span>
         </button>
       </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="card card-lg mb-8">
+          <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-6">
+            {editingId ? 'Edit Athlete' : 'Register New Athlete'}
+          </h2>
+
+          {/* Alert if no sessions */}
+          {!editingId && sessions.length === 0 && (
+            <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+              <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
+                ⚠️ No sessions available. Please create a session first before registering athletes.
+              </p>
+            </div>
+          )}
+
+          {/* Alert if no teams */}
+          {!editingId && teams.length === 0 && (
+            <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <p className="text-blue-800 dark:text-blue-300 text-sm font-medium">
+                ℹ️ No teams registered yet. Athletes can be registered without a team.
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Name with Initials"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="input"
+              />
+              <input
+                type="date"
+                placeholder="Date of Birth"
+                value={formData.birth_date}
+                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                className="input"
+              />
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="input"
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <select
+                value={formData.weight_category}
+                onChange={(e) => setFormData({ ...formData, weight_category: e.target.value })}
+                className="input"
+                required
+              >
+                <option value="">Select Weight Class</option>
+                {formData.gender === 'male' ? (
+                  <>
+                    <option value="60">60kg</option>
+                    <option value="65">65kg</option>
+                    <option value="71">71kg</option>
+                    <option value="79">79kg</option>
+                    <option value="88">88kg</option>
+                    <option value="94">94kg</option>
+                    <option value="110">110kg</option>
+                    <option value="110+">110kg+</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="48">48kg</option>
+                    <option value="53">53kg</option>
+                    <option value="58">58kg</option>
+                    <option value="63">63kg</option>
+                    <option value="69">69kg</option>
+                    <option value="77">77kg</option>
+                    <option value="86">86kg</option>
+                    <option value="86+">86kg+</option>
+                  </>
+                )}
+              </select>
+              <select
+                value={formData.session_id}
+                onChange={(e) => setFormData({ ...formData, session_id: e.target.value })}
+                className="input"
+              >
+                <option value="">Select Session</option>
+                {sessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={formData.team_id || ''}
+                onChange={(e) => setFormData({ ...formData, team_id: e.target.value || null })}
+                className="input"
+              >
+                <option value="">No Team</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.country})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Photo Upload (only show when editing) */}
+            {editingId && (
+              <div className="pt-4 border-t border-slate-200 dark:border-zinc-700">
+                <ImageUpload
+                  currentImageUrl={formData.photo_url}
+                  uploadEndpoint={`/uploads/athletes/${editingId}/photo`}
+                  onUploadSuccess={(data) => {
+                    setFormData({ ...formData, photo_url: data.photoUrl });
+                    fetchAthletes();
+                  }}
+                  label="Athlete Photo"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button 
+                type="submit" 
+                disabled={!editingId && sessions.length === 0}
+                className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingId ? 'Update' : 'Register'} Athlete
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -21,28 +314,108 @@ export default function Athletes() {
           <input
             type="text"
             placeholder="Search athletes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="input pl-12 py-3"
           />
         </div>
-        <select className="input py-3">
-          <option>All Categories</option>
-          <option>Men</option>
-          <option>Women</option>
+        <select
+          value={genderFilter}
+          onChange={(e) => setGenderFilter(e.target.value)}
+          className="input py-3"
+        >
+          <option value="all">All Categories</option>
+          <option value="male">Men</option>
+          <option value="female">Women</option>
         </select>
       </div>
 
-      {/* Content Card */}
-      <div className="card">
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <Users size={48} className="mx-auto mb-4 text-gray-400" />
-            <h3 className="font-heading text-2xl font-black text-black mb-2">Athlete Management</h3>
-            <p className="font-ui text-gray-600 max-w-md">
-              Register and manage athletes for your competitions with comprehensive profiles, weight categories, and performance tracking.
-            </p>
-          </div>
+      {/* Content */}
+      {loading ? (
+        <div className="card text-center py-12">
+          <p className="text-gray-600">Loading athletes...</p>
         </div>
-      </div>
+      ) : filteredAthletes.length === 0 ? (
+        <div className="card text-center py-16">
+          <Users size={48} className="mx-auto mb-4 text-gray-400" />
+          <h3 className="font-heading text-2xl font-black text-black mb-2">No athletes found</h3>
+          <p className="font-ui text-gray-600">Register athletes to get started</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b-2 border-black">
+                <th className="text-left p-4 font-heading font-black">Photo</th>
+                <th className="text-left p-4 font-heading font-black">Name</th>
+                <th className="text-left p-4 font-heading font-black">Team</th>
+                <th className="text-left p-4 font-heading font-black">Gender</th>
+                <th className="text-left p-4 font-heading font-black">Weight Category</th>
+                <th className="text-left p-4 font-heading font-black">Status</th>
+                <th className="text-left p-4 font-heading font-black">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAthletes.map((athlete) => (
+                <tr key={athlete.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="p-4">
+                    {athlete.photo_url ? (
+                      <img 
+                        src={athlete.photo_url} 
+                        alt={athlete.name}
+                        className="w-12 h-12 object-cover rounded-lg border border-slate-200"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-slate-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+                        <Users size={20} className="text-slate-400" />
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 font-bold">{athlete.name}</td>
+                  <td className="p-4">
+                    {athlete.team ? (
+                      <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 text-sm">
+                        {athlete.team.name || athlete.team}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">No Team</span>
+                    )}
+                  </td>
+                  <td className="p-4 capitalize">{athlete.gender}</td>
+                  <td className="p-4">{athlete.weight_category}kg</td>
+                  <td className="p-4">
+                    {athlete.weigh_in_completed_at ? (
+                      <span className="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium">
+                        ✓ Weighed In
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-medium">
+                        Pending Weigh-In
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 flex gap-2">
+                    <button
+                      onClick={() => handleEdit(athlete)}
+                      className="p-2 hover:bg-blue-50 rounded border border-gray-200"
+                      title="Edit"
+                    >
+                      <Edit2 size={16} className="text-blue-600" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(athlete.id)}
+                      className="p-2 hover:bg-red-50 rounded border border-gray-200"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} className="text-red-600" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

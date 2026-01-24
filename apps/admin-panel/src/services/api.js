@@ -5,6 +5,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Set timeout to 30 minutes for file uploads and slow connections
+  timeout: 30 * 60 * 1000,
 });
 
 // Add auth token to requests
@@ -12,6 +14,10 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Ensure uploads have extended timeout
+  if (config.url?.includes('/uploads')) {
+    config.timeout = 30 * 60 * 1000; // 30 minutes
   }
   return config;
 });

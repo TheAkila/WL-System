@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates';
 import api from '../services/api';
+import socketService from '../services/socket';
 import SessionSelector from '../components/SessionSelector';
 import LiveAttemptCard from '../components/LiveAttemptCard';
 import UpcomingAthletes from '../components/UpcomingAthletes';
+import NotificationDisplay from '../components/NotificationDisplay';
+import Timer from '../components/Timer';
+import RefereeDecisionCompact from '../components/RefereeDecisionCompact';
 import { Trophy, Users, Weight } from 'lucide-react';
 
 export default function LiveView() {
   const [sessionId, setSessionId] = useState(null);
   const [session, setSession] = useState(null);
   const [liftingOrder, setLiftingOrder] = useState([]);
-  const { currentAttempt, session: liveSession } = useRealtimeUpdates(sessionId);
+  const { currentAttempt, session: liveSession, timer } = useRealtimeUpdates(sessionId);
 
   // Fetch session details
   useEffect(() => {
@@ -121,6 +125,18 @@ export default function LiveView() {
 
       {/* Main Content */}
       <div className="px-6 py-8 space-y-8 max-w-2xl mx-auto">
+        {/* Timer Display */}
+        <Timer 
+          time={timer.timeRemaining} 
+          isRunning={timer.isRunning}
+          mode={timer.mode}
+        />
+
+        {/* Referee Decision - Shows when result is finalized */}
+        {currentAttempt?.result && currentAttempt.result !== 'pending' && (
+          <RefereeDecisionCompact attempt={currentAttempt} />
+        )}
+
         {/* Current Attempt */}
         <LiveAttemptCard attempt={currentAttempt} />
 
@@ -135,6 +151,9 @@ export default function LiveView() {
           Change Session
         </button>
       </div>
+
+      {/* Notification Display */}
+      <NotificationDisplay socket={socketService.socket} />
     </div>
   );
 }

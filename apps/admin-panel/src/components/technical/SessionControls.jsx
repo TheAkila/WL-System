@@ -1,36 +1,28 @@
 import { useState } from 'react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { Play, Pause, SkipForward } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 
-export default function SessionControls({ session, onUpdate }) {
+export default function SessionControls({ session, onUpdate, showLiftSwitch = true }) {
   const [loading, setLoading] = useState(false);
 
   const updateStatus = async (status) => {
     setLoading(true);
     try {
+      console.log('📋 Updating session status:', { sessionId: session.id, status });
       const response = await api.put(`/technical/sessions/${session.id}/status`, {
         status,
       });
+      console.log('✅ Session status updated:', response.data);
       onUpdate(response.data.data);
-      toast.success(`Session ${status}`);
+      toast.success(`Session ${status === 'in-progress' ? 'started' : status}`);
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Failed to update session');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const changeLift = async (liftType) => {
-    setLoading(true);
-    try {
-      const response = await api.put(`/technical/sessions/${session.id}/lift-type`, {
-        liftType,
-      });
-      onUpdate(response.data.data);
-      toast.success(`Changed to ${liftType === 'snatch' ? 'Snatch' : 'Clean & Jerk'}`);
-    } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Failed to change lift type');
+      console.error('❌ Failed to update session:', error);
+      const errorMessage = error.response?.data?.error?.message || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to update session';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -52,38 +44,14 @@ export default function SessionControls({ session, onUpdate }) {
         )}
 
         {session.status === 'in-progress' && (
-          <>
-            <button
-              onClick={() => updateStatus('completed')}
-              disabled={loading}
-              className="btn btn-danger flex items-center gap-2"
-            >
-              <Pause size={18} />
-              End Session
-            </button>
-
-            {session.current_lift === 'snatch' && (
-              <button
-                onClick={() => changeLift('clean_and_jerk')}
-                disabled={loading}
-                className="btn btn-secondary flex items-center gap-2"
-              >
-                <SkipForward size={18} />
-                Switch to Clean & Jerk
-              </button>
-            )}
-
-            {session.current_lift === 'clean_and_jerk' && (
-              <button
-                onClick={() => changeLift('snatch')}
-                disabled={loading}
-                className="btn btn-secondary flex items-center gap-2"
-              >
-                <SkipForward size={18} />
-                Switch to Snatch
-              </button>
-            )}
-          </>
+          <button
+            onClick={() => updateStatus('completed')}
+            disabled={loading}
+            className="btn btn-danger flex items-center gap-2"
+          >
+            <Pause size={18} />
+            End Session
+          </button>
         )}
 
         {session.status === 'completed' && (

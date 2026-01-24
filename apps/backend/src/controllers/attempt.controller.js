@@ -1,24 +1,27 @@
-import Attempt from '../models/Attempt.js';
+import db from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 export const getAttempts = async (req, res, next) => {
   try {
-    const { sessionId, athleteId, liftType } = req.query;
-    
-    const filter = {};
-    if (sessionId) filter.session = sessionId;
-    if (athleteId) filter.athlete = athleteId;
-    if (liftType) filter.liftType = liftType;
+    const { sessionId, athleteId, liftType, limit = 50, offset = 0 } = req.query;
 
-    const attempts = await Attempt.find(filter)
-      .populate('athlete')
-      .populate('session')
-      .sort('-timestamp');
+    // Use database service with pagination and relations
+    const attempts = await db.getAttempts({
+      sessionId,
+      athleteId,
+      liftType,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
 
     res.status(200).json({
       success: true,
       count: attempts.length,
       data: attempts,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      }
     });
   } catch (error) {
     next(error);
@@ -27,8 +30,7 @@ export const getAttempts = async (req, res, next) => {
 
 export const createAttempt = async (req, res, next) => {
   try {
-    const attempt = await Attempt.create(req.body);
-    await attempt.populate('athlete session');
+    const attempt = await db.createAttempt(req.body);
 
     // Emit socket event
     req.app.get('io').emit('attempt:created', attempt);
@@ -44,10 +46,7 @@ export const createAttempt = async (req, res, next) => {
 
 export const updateAttempt = async (req, res, next) => {
   try {
-    const attempt = await Attempt.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    }).populate('athlete session');
+    const attempt = await db.updateAttempt(req.params.id, req.body);
 
     if (!attempt) {
       throw new AppError('Attempt not found', 404);
@@ -74,16 +73,11 @@ export const validateAttempt = async (req, res, next) => {
       throw new AppError('Invalid referee position', 400);
     }
 
-    const attempt = await Attempt.findById(req.params.id);
+    const attempt = await db.recordRefereeDecision(req.params.id, referee, result);
 
     if (!attempt) {
       throw new AppError('Attempt not found', 404);
     }
-
-    attempt.refereeDecisions[referee] = result;
-    attempt.calculateResult();
-    await attempt.save();
-    await attempt.populate('athlete session');
 
     // Emit socket event
     req.app.get('io').emit('attempt:validated', attempt);

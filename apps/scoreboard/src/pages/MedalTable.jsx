@@ -6,51 +6,19 @@ import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 export default function MedalTable() {
   const [medals, setMedals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [competitions, setCompetitions] = useState([]);
-  const [selectedCompetition, setSelectedCompetition] = useState(null);
 
   useEffect(() => {
-    fetchCompetitions();
+    fetchMedals();
   }, []);
-
-  useEffect(() => {
-    if (selectedCompetition) {
-      fetchMedals();
-    }
-  }, [selectedCompetition]);
-
-  const fetchCompetitions = async () => {
-    try {
-      // For now, just get active sessions and extract competitions
-      const response = await api.get('/technical/sessions/active');
-      const sessions = response.data.data || [];
-      
-      const uniqueCompetitions = sessions.reduce((acc, session) => {
-        if (session.competition && !acc.find(c => c.id === session.competition.id)) {
-          acc.push(session.competition);
-        }
-        return acc;
-      }, []);
-
-      setCompetitions(uniqueCompetitions);
-      if (uniqueCompetitions.length > 0) {
-        setSelectedCompetition(uniqueCompetitions[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to fetch competitions:', error);
-    }
-  };
 
   const fetchMedals = async () => {
     setLoading(true);
     try {
-      // Calculate medals from completed sessions
+      // Calculate medals from all completed sessions
       const response = await api.get('/technical/sessions/active');
       const sessions = response.data.data || [];
       
-      const completedSessions = sessions.filter(
-        s => s.status === 'completed' && s.competition_id === selectedCompetition
-      );
+      const completedSessions = sessions.filter(s => s.status === 'completed');
 
       // For each session, get top 3 and count medals by country
       const medalCount = {};
@@ -121,26 +89,6 @@ export default function MedalTable() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Competition Selector */}
-        {competitions.length > 0 && (
-          <div className="bg-white border border-black p-6">
-            <label className="font-ui text-sm font-bold text-black uppercase tracking-widest mb-3 block">
-              Competition
-            </label>
-            <select
-              value={selectedCompetition || ''}
-              onChange={(e) => setSelectedCompetition(e.target.value)}
-              className="w-full px-4 py-4 bg-white text-black border-2 border-black font-ui font-semibold focus:ring-2 focus:ring-black transition-colors"
-            >
-              {competitions.map((comp) => (
-                <option key={comp.id} value={comp.id}>
-                  {comp.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {/* Medal Table */}
         {loading ? (
           <div className="bg-white border border-black p-12 text-center">

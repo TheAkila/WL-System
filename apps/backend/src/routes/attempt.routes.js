@@ -18,11 +18,11 @@ router.post(
   protect,
   authorize('admin', 'technical'),
   [
-    body('athleteId').isMongoId(),
-    body('sessionId').isMongoId(),
-    body('liftType').isIn(['snatch', 'cleanAndJerk']),
-    body('weight').isInt({ min: 1 }),
-    body('attemptNumber').isInt({ min: 1, max: 3 }),
+    body('athlete_id').notEmpty(),
+    body('session_id').notEmpty(),
+    body('lift_type').isIn(['snatch', 'clean_and_jerk']),
+    body('weight').isFloat({ min: 0 }),
+    body('attempt_number').isInt({ min: 1, max: 3 }),
   ],
   validate,
   createAttempt

@@ -13,10 +13,12 @@ class SocketService {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
+        transports: ['websocket', 'polling'],
       });
 
       this.socket.on('connect', () => {
         console.log('✅ Connected to Socket.IO server');
+        console.log('Socket ID:', this.socket.id);
       });
 
       this.socket.on('disconnect', () => {
@@ -26,6 +28,8 @@ class SocketService {
       this.socket.on('connect_error', (error) => {
         console.error('Connection error:', error);
       });
+    } else if (!this.socket.connected) {
+      this.socket.connect();
     }
     return this.socket;
   }

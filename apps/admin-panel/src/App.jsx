@@ -9,6 +9,10 @@ import Competitions from './pages/Competitions';
 import Athletes from './pages/Athletes';
 import Sessions from './pages/Sessions';
 import TechnicalPanel from './pages/TechnicalPanel';
+import Teams from './pages/Teams';
+import WeighIn from './pages/WeighIn';
+import UserManagement from './pages/UserManagement';
+import SystemSettings from './pages/SystemSettings';
 import Layout from './components/Layout';
 
 const router = createBrowserRouter(
@@ -38,12 +42,28 @@ const router = createBrowserRouter(
           element: <Athletes />,
         },
         {
+          path: 'teams',
+          element: <Teams />,
+        },
+        {
+          path: 'weigh-in',
+          element: <WeighIn />,
+        },
+        {
           path: 'sessions',
           element: <Sessions />,
         },
         {
           path: 'technical',
           element: <TechnicalPanel />,
+        },
+        {
+          path: 'users',
+          element: <UserManagement />,
+        },
+        {
+          path: 'settings',
+          element: <SystemSettings />,
         },
       ],
     },

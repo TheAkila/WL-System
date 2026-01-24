@@ -30,8 +30,8 @@ export default function CurrentAthleteDisplay({ currentAttempt, session }) {
               </h2>
               <div className="flex items-center gap-6 text-2xl text-black font-heading font-bold">
                 <span className="flex items-center gap-3">
-                  <span className="text-4xl">{athlete?.country || '🏳️'}</span>
-                  <span>{athlete?.team || 'Team'}</span>
+                  <span className="text-4xl">🏋️</span>
+                  <span>{athlete?.team?.country || 'TEAM'}</span>
                 </span>
                 <span className="text-gray-400">•</span>
                 <span>Start #{athlete?.start_number || '-'}</span>
