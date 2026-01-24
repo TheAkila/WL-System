@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Printer, Download, RefreshCw, ArrowLeft, Timer } from 'lucide-react';
+import { Printer, Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import AttemptCell from './AttemptCell';
@@ -10,11 +10,17 @@ export default function SessionSheet({ session: initialSession, onBack }) {
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
   const [session, setSession] = useState(initialSession);
   const [error, setError] = useState(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const [lastUpdateSource, setLastUpdateSource] = useState(null); // Track who triggered the update
+  const [lastUpdateSource, setLastUpdateSource] = useState(null);
+  const [nextLifter, setNextLifter] = useState(null);
+  const [previousLifter, setPreviousLifter] = useState(null); // Track previous lifter for timer duration
+  const [timerDuration, setTimerDuration] = useState(60); // IWF: 60s or 120s
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerKey, setTimerKey] = useState(0); // Force timer reset
+  const [forceEditMode, setForceEditMode] = useState(false); // Force edit mode to bypass restrictions
 
   const sessionId = session?.id;
 
@@ -76,6 +82,114 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     return [...ranked, ...dqWithNoRank];
   };
 
+  // Calculate next lifter based on IWF rules
+  const calculateNextLifter = useCallback((athletesData) => {
+    if (!athletesData || athletesData.length === 0) return null;
+
+    const activeAthletes = athletesData.filter(a => !a.is_dq);
+    if (activeAthletes.length === 0) return null;
+
+    // Collect all pending attempts with their details
+    const pendingAttempts = [];
+
+    activeAthletes.forEach(athlete => {
+      // Check snatch attempts (1, 2, 3)
+      let hasSnatchPending = false;
+      for (let attemptNum = 1; attemptNum <= 3; attemptNum++) {
+        const snatchAttempt = athlete.attempts?.find(
+          a => a.lift_type === 'snatch' && a.attempt_number === attemptNum
+        );
+        
+        // If attempt doesn't exist or is pending, it's next for this athlete
+        if (!snatchAttempt || snatchAttempt.result === 'pending') {
+          const weight = snatchAttempt?.weight || snatchAttempt?.requested_weight || athlete.opening_snatch || 0;
+          if (weight > 0) {
+            pendingAttempts.push({
+              athlete,
+              liftType: 'snatch',
+              attemptNumber: attemptNum,
+              weight,
+              displayName: athlete.name || 'Unknown'
+            });
+            hasSnatchPending = true;
+          }
+          break; // Only consider the first pending attempt for this lift type
+        }
+      }
+
+      // Check clean & jerk attempts (1, 2, 3) - only if no pending snatch attempts
+      if (!hasSnatchPending) {
+        for (let attemptNum = 1; attemptNum <= 3; attemptNum++) {
+          const cjAttempt = athlete.attempts?.find(
+            a => a.lift_type === 'clean_and_jerk' && a.attempt_number === attemptNum
+          );
+          
+          if (!cjAttempt || cjAttempt.result === 'pending') {
+            const weight = cjAttempt?.weight || cjAttempt?.requested_weight || athlete.opening_clean_jerk || 0;
+            if (weight > 0) {
+              pendingAttempts.push({
+                athlete,
+                liftType: 'clean_and_jerk',
+                attemptNumber: attemptNum,
+                weight,
+                displayName: athlete.name || 'Unknown'
+              });
+            }
+            break;
+          }
+        }
+      }
+    });
+
+    if (pendingAttempts.length === 0) return null;
+
+    // Sort by IWF rules:
+    // 1. Snatch before Clean & Jerk
+    // 2. Lower weight first (ascending)
+    // 3. Lower attempt number first
+    // 4. Lower start number first (tie-breaker)
+    pendingAttempts.sort((a, b) => {
+      // Snatch comes before C&J
+      if (a.liftType !== b.liftType) {
+        return a.liftType === 'snatch' ? -1 : 1;
+      }
+      // Lower weight first
+      if (a.weight !== b.weight) {
+        return a.weight - b.weight;
+      }
+      // Lower attempt number first
+      if (a.attemptNumber !== b.attemptNumber) {
+        return a.attemptNumber - b.attemptNumber;
+      }
+      // Lower start number first (tie-breaker)
+      return (a.athlete.start_number || 0) - (b.athlete.start_number || 0);
+    });
+
+    return pendingAttempts[0];
+  }, []);
+
+  // Update timer when next lifter changes (IWF Rules)
+  useEffect(() => {
+    if (nextLifter) {
+      // IWF Rule 6.6.3 & 6.6.4:
+      // - 60 seconds for first attempt or when switching athletes
+      // - 120 seconds for consecutive attempts by same athlete
+      let duration = 60;
+      
+      if (previousLifter && previousLifter.athlete.id === nextLifter.athlete.id) {
+        // Same athlete, consecutive attempt
+        duration = 120;
+      }
+      
+      setTimerDuration(duration);
+      setTimerKey(prev => prev + 1); // Reset timer
+      setTimerRunning(false); // Don't auto-start, official will start manually
+      
+      // Update previous lifter
+      setPreviousLifter(nextLifter);
+    }
+  }, [nextLifter, previousLifter]);
+
   // Load session data
   const fetchSessionData = useCallback(async () => {
     if (!sessionId) return;
@@ -96,6 +210,13 @@ export default function SessionSheet({ session: initialSession, onBack }) {
         athletesData = response.data.athletes;
       } else if (Array.isArray(response.data)) {
         athletesData = response.data;
+      }
+      
+      // Validate that we got data - if empty, keep existing data
+      if (!athletesData || athletesData.length === 0) {
+        console.warn('⚠️ API returned empty athletes data, keeping existing data');
+        setLoading(false);
+        return;
       }
       
       // Transform snatch_attempts and clean_jerk_attempts to attempts array
@@ -128,6 +249,10 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       
       const withCalculations = calculateRankings(transformedAthletes);
       setAthletes(withCalculations);
+      
+      // Calculate initial next lifter
+      const next = calculateNextLifter(withCalculations);
+      setNextLifter(next);
       
     } catch (error) {
       console.error('❌ Error fetching session data:', error);
@@ -177,58 +302,63 @@ export default function SessionSheet({ session: initialSession, onBack }) {
         return athlete;
       });
 
-      setAthletes(calculateRankings(updatedAthletes));
-
-      // Debounced save to backend
-      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+      const rankedAthletes = calculateRankings(updatedAthletes);
+      setAthletes(rankedAthletes);
       
-      const timeout = setTimeout(async () => {
-        try {
-          const payload = {
-            athlete_id: attemptData.athlete_id,
-            session_id: sessionId,
-            lift_type: attemptData.lift_type,
-            attempt_number: attemptData.attempt_number,
-            weight: attemptData.weight || attemptData.requested_weight,
-            result: attemptData.result || 'pending'
-          };
+      // Update next lifter after data entry
+      const next = calculateNextLifter(rankedAthletes);
+      setNextLifter(next);
 
-          console.log('📡 Sending to backend:', payload);
+      // IMMEDIATE save to backend (no delay to prevent data loss)
+      try {
+        const payload = {
+          athlete_id: attemptData.athlete_id,
+          session_id: sessionId,
+          lift_type: attemptData.lift_type,
+          attempt_number: attemptData.attempt_number,
+          weight: attemptData.weight || attemptData.requested_weight,
+          result: attemptData.result || 'pending'
+        };
 
-          if (attemptData.id) {
-            // Update existing attempt
-            const response = await api.put(`/attempts/${attemptData.id}`, payload);
-            console.log('✅ Attempt updated:', response.data);
-            toast.success('Attempt updated');
-          } else {
-            // Create new attempt
-            const response = await api.post('/attempts', payload);
-            console.log('✅ Attempt created:', response.data);
-            toast.success('Attempt saved');
-          }
-          
-          // Emit socket update to notify other users (but not ourselves)
-          socketService.emit('sheet:update', {
-            sessionId,
-            athleteId: attemptData.athlete_id,
-            liftType: attemptData.lift_type,
-            attemptNumber: attemptData.attempt_number,
-            source: 'self' // Mark as our own update
-          });
-          
-        } catch (error) {
-          console.error('❌ Error saving attempt:', error);
-          console.error('Error response:', error.response?.data);
-          console.error('Error status:', error.response?.status);
-          console.error('Error message:', error.message);
-          toast.error(error.response?.data?.message || error.message || 'Failed to save attempt');
-          // DO NOT refresh - data is already optimistically updated, user should retry manually
-        } finally {
-          setSaving(false);
+        console.log('📡 Sending to backend immediately:', payload);
+        setSaving(true);
+
+        if (attemptData.id) {
+          // Update existing attempt
+          const response = await api.put(`/attempts/${attemptData.id}`, payload);
+          console.log('✅ Attempt updated:', response.data);
+          setLastSaved(new Date());
+          toast.success('✓ Saved');
+        } else {
+          // Create new attempt
+          const response = await api.post('/attempts', payload);
+          console.log('✅ Attempt created:', response.data);
+          setLastSaved(new Date());
+          toast.success('✓ Saved');
         }
-      }, 500);
+        
+        // Emit socket update to notify other users (but not ourselves)
+        socketService.emit('sheet:update', {
+          sessionId,
+          athleteId: attemptData.athlete_id,
+          liftType: attemptData.lift_type,
+          attemptNumber: attemptData.attempt_number,
+          source: 'self' // Mark as our own update
+        });
+        
+      } catch (error) {
+        console.error('❌ Error saving attempt:', error);
+        console.error('Error response:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        console.error('Error message:', error.message);
+        toast.error('⚠️ Failed to save - ' + (error.response?.data?.message || error.message || 'Retry'));
+        // DO NOT refresh - data is already optimistically updated
+      } finally {
+        setSaving(false);
+      }
 
-      setAutoSaveTimeout(timeout);
+      // Clear any pending timeout
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
 
     } catch (error) {
       console.error('❌ Error updating attempt:', error);
@@ -327,6 +457,44 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     }
   };
 
+  const handleClearAttempts = async () => {
+    if (!window.confirm('Are you sure you want to clear all attempts? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      // Clear attempts from backend
+      await api.delete(`/sessions/${sessionId}/attempts/clear`);
+
+      // Update local state - clear all attempts but keep athlete data
+      const clearedAthletes = athletes.map(athlete => ({
+        ...athlete,
+        attempts: [],
+        totals: { snatch: 0, clean_jerk: 0, total: 0 },
+        bestSnatch: 0,
+        bestCleanJerk: 0,
+        total: 0,
+        is_dq: false,
+        rank: null
+      }));
+
+      setAthletes(clearedAthletes);
+      setNextLifter(null);
+      setPreviousLifter(null);
+      setTimerRunning(false);
+      setTimerKey(prev => prev + 1);
+      
+      toast.success('All attempts cleared successfully');
+    } catch (error) {
+      console.error('Clear attempts error:', error);
+      toast.error('Failed to clear attempts');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-zinc-900 p-4">
       {/* Header */}
@@ -351,21 +519,17 @@ export default function SessionSheet({ session: initialSession, onBack }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {saving && <span className="text-sm text-blue-600">Saving...</span>}
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="px-3 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors"
-            >
-              Debug
-            </button>
-            <button
-              onClick={fetchSessionData}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              disabled={loading}
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
+            {saving && (
+              <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">
+                 Saving...
+              </span>
+            )}
+            {!saving && lastSaved && (
+              <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 font-semibold">
+                <Check size={14} />
+                Saved
+              </span>
+            )}
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
@@ -380,29 +544,87 @@ export default function SessionSheet({ session: initialSession, onBack }) {
               <Download size={16} />
               Export
             </button>
+            <button
+              onClick={handleClearAttempts}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              <Trash2 size={16} />
+              Clear Attempts
+            </button>
+            <button
+              onClick={() => {
+                setForceEditMode(!forceEditMode);
+                toast.success(forceEditMode ? 'Force Edit: OFF' : 'Force Edit: ON - All restrictions disabled');
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-semibold ${
+                forceEditMode 
+                  ? 'bg-red-700 hover:bg-red-800 text-white ring-2 ring-red-500' 
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+              }`}
+            >
+              <Unlock size={16} />
+              Force Edit {forceEditMode ? '(ON)' : ''}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Compact Nav Bar - Timer & Live Display */}
-      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden mb-4">
-        <div className="flex items-center justify-between p-3">
-          <div className="flex items-center gap-3">
-            {session && session.current_lift && (
-              <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium capitalize">
-                {session.current_lift.replace('_', ' & ')}
+      {/* Next Lifter Panel - Live Update with Timer */}
+      {nextLifter && (
+        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden mb-4">
+          <div className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-sm font-medium">
+               NEXT LIFTER
               </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Timer size={16} className="text-slate-600 dark:text-zinc-400" />
-              <CompetitionTimer sessionId={sessionId} showDebug={false} compact={true} />
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-slate-800 dark:text-white">
+                  {nextLifter.displayName}
+                </span>
+                <span className="text-slate-400 dark:text-zinc-500">•</span>
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
+                  {nextLifter.liftType === 'snatch' ? 'Snatch' : 'Clean & Jerk'}
+                </span>
+                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
+                  Attempt {nextLifter.attemptNumber}
+                </span>
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-semibold">
+                  {nextLifter.weight} kg
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              
+             
+              <div className="h-6 w-px bg-slate-300 dark:bg-zinc-600"></div>
+              {/* IWF Timer Rule Indicator */}
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                timerDuration === 120 
+                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200' 
+                  : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+              }`}>
+               
+              </span>
+              <div className="flex items-center gap-2">
+                <Timer size={16} className="text-slate-600 dark:text-zinc-400" />
+                <CompetitionTimer 
+                  key={timerKey}
+                  duration={timerDuration} 
+                  isRunning={timerRunning}
+                  onStart={() => setTimerRunning(true)}
+                  onPause={() => setTimerRunning(false)}
+                  onReset={() => {
+                    setTimerRunning(false);
+                    setTimerKey(prev => prev + 1);
+                  }}
+                  compact={true} 
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Spreadsheet Sheet */}
       <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
@@ -411,20 +633,6 @@ export default function SessionSheet({ session: initialSession, onBack }) {
             Competition Sheet
           </h2>
         </div>
-
-        {/* Debug Panel */}
-        {showDebug && (
-          <div className="mb-6 p-4 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-            <h3 className="text-sm font-semibold mb-2 text-slate-800 dark:text-white">Debug Info</h3>
-            <pre className="text-xs text-slate-600 dark:text-zinc-400 whitespace-pre-wrap">
-              {JSON.stringify({
-                sessionId,
-                athleteCount: athletes.length,
-                timestamp: new Date().toISOString()
-              }, null, 2)}
-            </pre>
-          </div>
-        )}
 
         {/* Loading/Error States */}
         {loading && (
@@ -483,8 +691,19 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                 </tr>
               </thead>
               <tbody>
-                {athletes.map((athlete, index) => (
-                  <tr key={athlete.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors h-[52px]">
+                {athletes.map((athlete, index) => {
+                  // Check if this athlete is the next lifter
+                  const isNextLifter = nextLifter && nextLifter.athlete.id === athlete.id;
+                  
+                  return (
+                    <tr 
+                      key={athlete.id} 
+                      className={`transition-all duration-300 h-[52px] ${
+                        isNextLifter 
+                          ? 'bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-200 dark:from-yellow-700 dark:via-amber-700 dark:to-yellow-700 shadow-lg ring-4 ring-yellow-500 ring-opacity-50 scale-[1.02]' 
+                          : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                      }`}
+                    >
                     <td className="p-3 text-base font-bold text-center text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/30">
                       {index + 1}
                     </td>
@@ -504,6 +723,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                           attemptNumber={attemptNum}
                           onUpdate={handleAttemptUpdate}
                           previousAttempts={athlete.attempts || []}
+                          forceEditMode={forceEditMode}
                         />
                       </td>
                     ))}
@@ -522,6 +742,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                           attemptNumber={attemptNum}
                           onUpdate={handleAttemptUpdate}
                           previousAttempts={athlete.attempts || []}
+                          forceEditMode={forceEditMode}
                         />
                       </td>
                     ))}
@@ -560,7 +781,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

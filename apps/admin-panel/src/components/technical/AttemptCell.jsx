@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Check, X, SkipForward } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpdate, previousAttempts = [] }) {
+export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpdate, previousAttempts = [], forceEditMode = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
@@ -14,6 +14,9 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
 
   const weight = attempt?.weight || attempt?.requested_weight || '';
   const result = attempt?.result;
+  const editCount = attempt?.edit_count || 0;
+  const maxEdits = 3;
+  const editsRemaining = maxEdits - editCount;
 
   // Get previous successful weight for validation (ascending order rule)
   const previousGoodWeights = previousAttempts
@@ -36,6 +39,20 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
   }, [isEditing]);
 
   const handleCellClick = () => {
+    // In force edit mode, allow editing anything
+    if (forceEditMode) {
+      if (!isEditing) {
+        setIsEditing(true);
+      }
+      return;
+    }
+    
+    // Check if edits are exhausted
+    if (attempt && editCount >= maxEdits) {
+      toast.error(`Cannot edit: Maximum ${maxEdits} changes allowed per attempt`);
+      return;
+    }
+    
     // Allow editing weight only if no result set yet (except not_attempted)
     if (result !== null && result !== undefined && result !== 'not_attempted') {
       return;
@@ -80,22 +97,43 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
 
     try {
       if (attempt) {
+        // Check if weight is actually changing
+        const isWeightChanging = weightValue !== (attempt.weight || attempt.requested_weight);
+        const newEditCount = isWeightChanging ? editCount + 1 : editCount;
+        
+        // Verify edit limit (unless in force edit mode)
+        if (!forceEditMode && isWeightChanging && newEditCount > maxEdits) {
+          toast.error(`Cannot edit: Maximum ${maxEdits} changes allowed per attempt`);
+          setInputValue(weight || '');
+          setIsEditing(false);
+          return;
+        }
+        
         // Update existing attempt
         const updatedAttempt = {
           ...attempt,
           weight: weightValue,
-          requested_weight: weightValue
+          requested_weight: weightValue,
+          edit_count: forceEditMode ? editCount : newEditCount // Don't increment in force edit mode
         };
         await onUpdate(updatedAttempt);
+        
+        if (isWeightChanging && !forceEditMode) {
+          const remaining = maxEdits - newEditCount;
+          toast.success(`Weight updated (${remaining} ${remaining === 1 ? 'change' : 'changes'} remaining)`);
+        } else if (forceEditMode) {
+          toast.success('Weight updated (Force Edit mode)');
+        }
       } else {
-        // Create new attempt
+        // Create new attempt (first edit = 0)
         const newAttempt = {
           athlete_id: athlete.id,
           lift_type: attemptType,
           attempt_number: attemptNumber,
           weight: weightValue,
           requested_weight: weightValue,
-          result: 'pending'
+          result: 'pending',
+          edit_count: 0
         };
         await onUpdate(newAttempt);
       }
@@ -245,11 +283,18 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       ) : result === 'not_attempted' ? (
         <span className="text-sm font-bold">N/A</span>
       ) : weight ? (
-        <div className="w-full h-full flex items-center justify-center group">
+        <div className="w-full h-full flex items-center justify-center group relative">
           {/* Weight display - always visible and centered */}
           <span className="font-bold text-base">
             {weight}kg
           </span>
+          
+          {/* Edit count indicator - always visible in top right */}
+          {editCount > 0 && (
+            <span className="absolute top-1 right-1 text-[8px] font-bold opacity-70 bg-slate-300 dark:bg-slate-600 text-slate-800 dark:text-white px-1 rounded-full">
+              {editCount}
+            </span>
+          )}
           
           {/* Admin decision buttons - only show on hover during pending state */}
           {result === 'pending' ? (

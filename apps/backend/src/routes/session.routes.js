@@ -8,6 +8,7 @@ import {
   deleteSession,
   startSession,
   endSession,
+  clearSessionAttempts,
 } from '../controllers/session.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -36,5 +37,6 @@ router.delete('/:id', protect, authorize('admin'), deleteSession);
 
 router.post('/:id/start', protect, authorize('admin', 'technical'), startSession);
 router.post('/:id/end', protect, authorize('admin', 'technical'), endSession);
+router.delete('/:id/attempts/clear', protect, authorize('admin', 'technical'), clearSessionAttempts);
 
 export default router;

@@ -205,3 +205,40 @@ export const endSession = async (req, res, next) => {
     next(error);
   }
 };
+
+export const clearSessionAttempts = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id;
+
+    // First, verify session exists
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError || !session) {
+      throw new AppError('Session not found', 404);
+    }
+
+    // Delete all attempts for this session
+    const { error: deleteError } = await supabase
+      .from('attempts')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (deleteError) {
+      throw new AppError(deleteError.message, 400);
+    }
+
+    // Emit socket event to update all connected clients
+    req.app.get('io').emit('attempts:cleared', { sessionId });
+
+    res.status(200).json({
+      success: true,
+      message: 'All attempts cleared successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
