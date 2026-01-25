@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Check, X, SkipForward } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpdate, previousAttempts = [], forceEditMode = false }) {
+export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpdate, previousAttempts = [], forceEditMode = false, isDQ = false, nextLifter = null }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
@@ -243,6 +243,17 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
   };
 
   const getCellStyle = () => {
+    // Check if this is the next lifter's attempt
+    const isNextLifter = nextLifter && 
+      nextLifter.athlete.id === athlete.id && 
+      nextLifter.liftType === attemptType && 
+      nextLifter.attemptNumber === attemptNumber;
+
+    // If this is the next lifter, highlight in blue
+    if (isNextLifter) {
+      return 'bg-blue-300 dark:bg-blue-600 text-blue-900 dark:text-blue-100 border-blue-600 font-bold ring-2 ring-blue-400';
+    }
+
     // If athlete is DQ'd, all attempts are red
     if (athlete?.is_dq) {
       return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 border-red-500 font-semibold';

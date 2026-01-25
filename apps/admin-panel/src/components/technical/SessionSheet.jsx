@@ -56,15 +56,16 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     });
   };
 
-  // Calculate rankings (without reordering rows)
+  // Calculate rankings (without reordering rows, DQ athletes at bottom)
   const calculateRankings = (athletesData) => {
     const withResults = calculateResults(athletesData);
     
-    // Calculate ranks without changing row order
-    // Separate DQ and active athletes to calculate ranks
+    // Separate DQ and active athletes
     const activeAthletes = withResults.filter(a => !a.is_dq);
+    const dqAthletes = withResults.filter(a => a.is_dq);
     
-    // Sort only for ranking calculation
+    // Calculate ranks without changing active athlete order
+    // Separate DQ and active athletes to calculate ranks
     const rankedList = activeAthletes
       .slice()
       .sort((a, b) => {
@@ -73,17 +74,25 @@ export default function SessionSheet({ session: initialSession, onBack }) {
         return (a.start_number || 0) - (b.start_number || 0);
       });
 
-    // Create rank map
+    // Create rank map for active athletes
     const rankMap = {};
     rankedList.forEach((athlete, index) => {
       rankMap[athlete.id] = athlete.total > 0 ? index + 1 : null;
     });
 
-    // Return athletes in original order with calculated ranks
-    return withResults.map(athlete => ({
+    // Return active athletes in original order with calculated ranks, then DQ athletes at bottom
+    const activeWithRanks = activeAthletes.map(athlete => ({
       ...athlete,
       rank: rankMap[athlete.id] || null
     }));
+
+    // DQ athletes with no rank
+    const dqWithRanks = dqAthletes.map(athlete => ({
+      ...athlete,
+      rank: null
+    }));
+
+    return [...activeWithRanks, ...dqWithRanks];
   };
 
   // Calculate next lifter based on IWF rules
@@ -757,17 +766,10 @@ export default function SessionSheet({ session: initialSession, onBack }) {
               </thead>
               <tbody>
                 {athletes.map((athlete, index) => {
-                  // Check if this athlete is the next lifter
-                  const isNextLifter = nextLifter && nextLifter.athlete.id === athlete.id;
-                  
                   return (
                     <tr 
                       key={athlete.id} 
-                      className={`transition-all duration-300 h-[52px] ${
-                        isNextLifter 
-                          ? 'bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-200 dark:from-yellow-700 dark:via-amber-700 dark:to-yellow-700 shadow-lg ring-4 ring-yellow-500 ring-opacity-50 scale-[1.02]' 
-                          : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'
-                      }`}
+                      className="transition-all duration-300 h-[52px] hover:bg-slate-50 dark:hover:bg-zinc-800/50"
                     >
                     <td className="p-2 text-sm font-bold text-center text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/30">
                       {index + 1}
@@ -789,6 +791,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                           onUpdate={handleAttemptUpdate}
                           previousAttempts={athlete.attempts || []}
                           forceEditMode={forceEditMode}
+                          isDQ={athlete.is_dq}
+                          nextLifter={nextLifter}
                         />
                       </td>
                     ))}
@@ -808,6 +812,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                           onUpdate={handleAttemptUpdate}
                           previousAttempts={athlete.attempts || []}
                           forceEditMode={forceEditMode}
+                          isDQ={athlete.is_dq}
+                          nextLifter={nextLifter}
                         />
                       </td>
                     ))}
