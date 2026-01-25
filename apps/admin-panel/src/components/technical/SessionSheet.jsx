@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import AttemptCell from './AttemptCell';
 import socketService from '../../services/socket';
 import CompetitionTimer from './CompetitionTimer';
+import WeighInModal from './WeighInModal';
+import PhaseControlButtons from './PhaseControlButtons';
 
 export default function SessionSheet({ session: initialSession, onBack }) {
   const [athletes, setAthletes] = useState([]);
@@ -21,6 +23,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerKey, setTimerKey] = useState(0); // Force timer reset
   const [forceEditMode, setForceEditMode] = useState(false); // Force edit mode to bypass restrictions
+  const [showWeighInModal, setShowWeighInModal] = useState(false); // Phase 2: Weigh-in modal state
 
   const sessionId = session?.id;
 
@@ -53,37 +56,38 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     });
   };
 
-  // Calculate rankings
+  // Calculate rankings (without reordering rows)
   const calculateRankings = (athletesData) => {
     const withResults = calculateResults(athletesData);
     
-    // Separate DQ athletes
+    // Calculate ranks without changing row order
+    // Separate DQ and active athletes to calculate ranks
     const activeAthletes = withResults.filter(a => !a.is_dq);
-    const dqAthletes = withResults.filter(a => a.is_dq);
-
-    // Sort active athletes by total (desc), then bodyweight (asc), then start number (asc)
-    const ranked = activeAthletes
+    
+    // Sort only for ranking calculation
+    const rankedList = activeAthletes
+      .slice()
       .sort((a, b) => {
         if (a.total !== b.total) return b.total - a.total;
         if (a.bodyweight !== b.bodyweight) return a.bodyweight - b.bodyweight;
         return (a.start_number || 0) - (b.start_number || 0);
-      })
-      .map((athlete, index) => ({
-        ...athlete,
-        rank: athlete.total > 0 ? index + 1 : null
-      }));
+      });
 
-    // DQ athletes have no rank
-    const dqWithNoRank = dqAthletes.map(athlete => ({
+    // Create rank map
+    const rankMap = {};
+    rankedList.forEach((athlete, index) => {
+      rankMap[athlete.id] = athlete.total > 0 ? index + 1 : null;
+    });
+
+    // Return athletes in original order with calculated ranks
+    return withResults.map(athlete => ({
       ...athlete,
-      rank: null
+      rank: rankMap[athlete.id] || null
     }));
-
-    return [...ranked, ...dqWithNoRank];
   };
 
   // Calculate next lifter based on IWF rules
-  const calculateNextLifter = useCallback((athletesData) => {
+  const calculateNextLifter = useCallback((athletesData, currentPhase = null) => {
     if (!athletesData || athletesData.length === 0) return null;
 
     const activeAthletes = athletesData.filter(a => !a.is_dq);
@@ -93,32 +97,47 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     const pendingAttempts = [];
 
     activeAthletes.forEach(athlete => {
+      // Determine which lift type to check based on current phase
+      let skipSnatch = false;
+      let skipCJ = false;
+
+      // If in clean_jerk_active phase, prioritize C&J and ignore snatch
+      if (currentPhase === 'clean_jerk_active') {
+        skipSnatch = true;
+      }
+      // If in snatch_active phase, prioritize snatch and ignore C&J
+      else if (currentPhase === 'snatch_active') {
+        skipCJ = true;
+      }
+
       // Check snatch attempts (1, 2, 3)
       let hasSnatchPending = false;
-      for (let attemptNum = 1; attemptNum <= 3; attemptNum++) {
-        const snatchAttempt = athlete.attempts?.find(
-          a => a.lift_type === 'snatch' && a.attempt_number === attemptNum
-        );
-        
-        // If attempt doesn't exist or is pending, it's next for this athlete
-        if (!snatchAttempt || snatchAttempt.result === 'pending') {
-          const weight = snatchAttempt?.weight || snatchAttempt?.requested_weight || athlete.opening_snatch || 0;
-          if (weight > 0) {
-            pendingAttempts.push({
-              athlete,
-              liftType: 'snatch',
-              attemptNumber: attemptNum,
-              weight,
-              displayName: athlete.name || 'Unknown'
-            });
-            hasSnatchPending = true;
+      if (!skipSnatch) {
+        for (let attemptNum = 1; attemptNum <= 3; attemptNum++) {
+          const snatchAttempt = athlete.attempts?.find(
+            a => a.lift_type === 'snatch' && a.attempt_number === attemptNum
+          );
+          
+          // If attempt doesn't exist or is pending, it's next for this athlete
+          if (!snatchAttempt || snatchAttempt.result === 'pending') {
+            const weight = snatchAttempt?.weight || snatchAttempt?.requested_weight || athlete.opening_snatch || 0;
+            if (weight > 0) {
+              pendingAttempts.push({
+                athlete,
+                liftType: 'snatch',
+                attemptNumber: attemptNum,
+                weight,
+                displayName: athlete.name || 'Unknown'
+              });
+              hasSnatchPending = true;
+            }
+            break; // Only consider the first pending attempt for this lift type
           }
-          break; // Only consider the first pending attempt for this lift type
         }
       }
 
-      // Check clean & jerk attempts (1, 2, 3) - only if no pending snatch attempts
-      if (!hasSnatchPending) {
+      // Check clean & jerk attempts (1, 2, 3) - only if no pending snatch attempts (or in C&J phase)
+      if (!skipCJ && (!hasSnatchPending || currentPhase === 'clean_jerk_active')) {
         for (let attemptNum = 1; attemptNum <= 3; attemptNum++) {
           const cjAttempt = athlete.attempts?.find(
             a => a.lift_type === 'clean_and_jerk' && a.attempt_number === attemptNum
@@ -144,12 +163,24 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     if (pendingAttempts.length === 0) return null;
 
     // Sort by IWF rules:
-    // 1. Snatch before Clean & Jerk
+    // 1. For current phase: same lift type comes first
     // 2. Lower weight first (ascending)
     // 3. Lower attempt number first
     // 4. Lower start number first (tie-breaker)
     pendingAttempts.sort((a, b) => {
-      // Snatch comes before C&J
+      // If in specific phase, prioritize that lift type
+      if (currentPhase === 'clean_jerk_active' || currentPhase === 'snatch_active') {
+        // Same lift type, sort by weight
+        if (a.liftType === b.liftType) {
+          if (a.weight !== b.weight) return a.weight - b.weight;
+          if (a.attemptNumber !== b.attemptNumber) return a.attemptNumber - b.attemptNumber;
+          return (a.athlete.start_number || 0) - (b.athlete.start_number || 0);
+        }
+        // Different lift types
+        return 0; // Only one type should be in pendingAttempts in active phase
+      }
+
+      // Normal flow (multiple phases): Snatch before C&J
       if (a.liftType !== b.liftType) {
         return a.liftType === 'snatch' ? -1 : 1;
       }
@@ -250,8 +281,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       const withCalculations = calculateRankings(transformedAthletes);
       setAthletes(withCalculations);
       
-      // Calculate initial next lifter
-      const next = calculateNextLifter(withCalculations);
+      // Calculate initial next lifter with current session state
+      const next = calculateNextLifter(withCalculations, session?.state);
       setNextLifter(next);
       
     } catch (error) {
@@ -305,8 +336,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       const rankedAthletes = calculateRankings(updatedAthletes);
       setAthletes(rankedAthletes);
       
-      // Update next lifter after data entry
-      const next = calculateNextLifter(rankedAthletes);
+      // Update next lifter after data entry with current session state
+      const next = calculateNextLifter(rankedAthletes, session?.state);
       setNextLifter(next);
 
       // IMMEDIATE save to backend (no delay to prevent data loss)
@@ -397,10 +428,6 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       fetchSessionData();
     }
   }, [sessionId]);
-
-  // NOTE: Socket listeners DISABLED to prevent data loss from auto-refresh
-  // Data is already optimistically updated on client side
-  // Manual refresh button available in UI if sync needed
 
   const handlePrint = () => {
     window.print();
@@ -495,6 +522,20 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     }
   };
 
+  // Phase 2: Handle state changes from SessionCard and PhaseControlButtons
+  const handleSessionStateChange = async (response) => {
+    // Refresh session data after state change
+    await fetchSessionData();
+    toast.success('Session state updated');
+  };
+
+  // Phase 2: Handle weigh-in modal close and refresh
+  const handleWeighInComplete = async () => {
+    setShowWeighInModal(false);
+    await fetchSessionData();
+    toast.success('Weigh-in completed');
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-zinc-900 p-4">
       {/* Header */}
@@ -530,6 +571,14 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                 Saved
               </span>
             )}
+            {/* Phase 2: PhaseControlButtons Component */}
+            <PhaseControlButtons
+              session={session}
+              onStateChange={handleSessionStateChange}
+              onRefresh={fetchSessionData}
+              compact={true}
+              className="flex gap-2"
+            />
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
@@ -651,35 +700,51 @@ export default function SessionSheet({ session: initialSession, onBack }) {
         {/* Spreadsheet Table */}
         {!loading && !error && (
           <div className="overflow-x-auto rounded-lg border-2 border-slate-300 dark:border-zinc-700">
-            <table className="w-full border-collapse bg-white dark:bg-zinc-900">
+            <table className="w-full border-collapse bg-white dark:bg-zinc-900 table-fixed">
+              <colgroup>
+                <col style={{ width: '50px' }} />
+                <col style={{ width: '150px' }} />
+                <col style={{ width: '100px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '60px' }} />
+              </colgroup>
               <thead>
-                <tr className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-zinc-800 dark:to-zinc-700">
-                  <th rowSpan="2" className="p-4 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 w-16">
+                <tr className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-zinc-800 dark:to-zinc-700 h-[52px]">
+                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
                     No
                   </th>
-                  <th rowSpan="2" className="p-4 text-left text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 min-w-[180px]">
+                  <th rowSpan="2" className="p-2 text-left text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
                     Name
                   </th>
-                  <th rowSpan="2" className="p-4 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 min-w-[100px]">
+                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
                     Team
                   </th>
-                  <th colSpan="4" className="p-3 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/20">
+                  <th colSpan="4" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/20">
                     SNATCH
                   </th>
-                  <th colSpan="4" className="p-3 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/20">
+                  <th colSpan="4" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/20">
                     CLEAN & JERK
                   </th>
-                  <th rowSpan="2" className="p-4 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 bg-amber-50 dark:bg-amber-900/20 min-w-[80px]">
+                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 bg-amber-50 dark:bg-amber-900/20">
                     TOTAL
                   </th>
-                  <th rowSpan="2" className="p-4 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 min-w-[70px]">
+                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
                     RANK
                   </th>
-                  <th rowSpan="2" className="p-4 text-center text-sm font-bold text-slate-800 dark:text-white border-b-2 border-slate-400 dark:border-zinc-600 min-w-[60px]">
+                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-b-2 border-slate-400 dark:border-zinc-600">
                     DQ
                   </th>
                 </tr>
-                <tr className="bg-gradient-to-r from-slate-50 to-white dark:from-zinc-700 dark:to-zinc-800">
+                <tr className="bg-gradient-to-r from-slate-50 to-white dark:from-zinc-700 dark:to-zinc-800 h-[40px]">
                   <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">1</th>
                   <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">2</th>
                   <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">3</th>
@@ -704,13 +769,13 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                           : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'
                       }`}
                     >
-                    <td className="p-3 text-base font-bold text-center text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/30">
+                    <td className="p-2 text-sm font-bold text-center text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/30">
                       {index + 1}
                     </td>
-                    <td className="p-3 text-sm font-semibold text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700">
+                    <td className="p-2 text-sm font-semibold text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 truncate">
                       {athlete.name}
                     </td>
-                    <td className="p-3 text-sm text-center text-slate-600 dark:text-zinc-400 border-r-2 border-b border-slate-300 dark:border-zinc-700">
+                    <td className="p-2 text-xs text-center text-slate-600 dark:text-zinc-400 border-r-2 border-b border-slate-300 dark:border-zinc-700 truncate">
                       {athlete.teams?.country || athlete.country || '-'}
                     </td>
                     
@@ -729,7 +794,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                     ))}
 
                     {/* Best Snatch */}
-                    <td className="p-3 text-base font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
+                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
                       {athlete.bestSnatch > 0 ? athlete.bestSnatch : '-'}
                     </td>
 
@@ -748,19 +813,19 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                     ))}
 
                     {/* Best C&J */}
-                    <td className="p-3 text-base font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
+                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
                       {athlete.bestCleanJerk > 0 ? athlete.bestCleanJerk : '-'}
                     </td>
 
                     {/* Total */}
-                    <td className="p-3 text-lg font-extrabold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-amber-100 dark:bg-amber-900/30">
+                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-amber-100 dark:bg-amber-900/30">
                       {athlete.total > 0 ? athlete.total : '-'}
                     </td>
 
                     {/* Rank */}
-                    <td className="p-3 text-lg font-extrabold text-center border-r-2 border-b border-slate-300 dark:border-zinc-700">
+                    <td className="p-2 text-sm font-bold text-center border-r-2 border-b border-slate-300 dark:border-zinc-700">
                       {athlete.rank ? (
-                        <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${
+                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs ${
                           athlete.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
                           athlete.rank === 2 ? 'bg-gray-300 text-gray-900' :
                           athlete.rank === 3 ? 'bg-orange-400 text-orange-900' :
@@ -772,7 +837,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                     </td>
 
                     {/* DQ */}
-                    <td className="p-3 text-center border-b border-slate-300 dark:border-zinc-700">
+                    <td className="p-2 text-center border-b border-slate-300 dark:border-zinc-700">
                       <input
                         type="checkbox"
                         checked={athlete.is_dq || false}

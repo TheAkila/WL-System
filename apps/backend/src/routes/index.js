@@ -3,6 +3,7 @@ import competitionRoutes from './competition.routes.js';
 import athleteRoutes from './athlete.routes.js';
 import attemptRoutes from './attempt.routes.js';
 import sessionRoutes from './session.routes.js';
+import sessionStateRoutes from './sessionState.routes.js';
 import technicalRoutes from './technical.routes.js';
 import timerRoutes from './timer.routes.js';
 import teamRoutes from './team.routes.js';
@@ -22,6 +23,7 @@ export const setupRoutes = (app) => {
   app.use('/api/athletes', athleteRoutes);
   app.use('/api/attempts', attemptRoutes);
   app.use('/api/sessions', sessionRoutes);
+  app.use('/api/sessions', sessionStateRoutes);
   app.use('/api/technical', technicalRoutes);
   app.use('/api/timer', timerRoutes);
   app.use('/api/teams', teamRoutes);
