@@ -8,25 +8,13 @@ import UpcomingAthletes from '../components/UpcomingAthletes';
 import NotificationDisplay from '../components/NotificationDisplay';
 import Timer from '../components/Timer';
 import RefereeDecisionCompact from '../components/RefereeDecisionCompact';
-import { Trophy, Users, Weight, Moon, Sun } from 'lucide-react';
+import { Trophy, Users, Weight } from 'lucide-react';
 
 export default function LiveView() {
   const [sessionId, setSessionId] = useState(null);
   const [session, setSession] = useState(null);
   const [liftingOrder, setLiftingOrder] = useState([]);
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('darkMode') === 'true';
-  });
   const { currentAttempt, session: liveSession, timer } = useRealtimeUpdates(sessionId);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
 
   // Fetch session details
   useEffect(() => {
@@ -121,19 +109,8 @@ export default function LiveView() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="w-10 h-10 flex items-center justify-center bg-slate-200 dark:bg-zinc-700 hover:bg-slate-300 dark:hover:bg-zinc-600 rounded-lg transition-colors flex-shrink-0"
-                  title={darkMode ? 'Light mode' : 'Dark mode'}
-                >
-                  {darkMode ? (
-                    <Sun size={22} className="text-yellow-400" />
-                  ) : (
-                    <Moon size={22} className="text-slate-800" />
-                  )}
-                </button>
-                <span className="px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white font-heading text-sm font-bold uppercase tracking-widest flex items-center gap-2 rounded-lg whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white font-heading text-sm font-bold uppercase tracking-widest flex items-center gap-2 rounded-lg">
                   <Trophy className="w-4 h-4" />
                   {session.current_lift === 'snatch' ? 'Snatch' : 'C&J'}
                 </span>
