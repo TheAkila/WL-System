@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Activity, Users, Trophy, Calendar, ArrowRight, Zap, CheckCircle, Download } from 'lucide-react';
+import { Activity, Users, Trophy, Calendar, ArrowRight, Zap, Download } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -50,34 +50,32 @@ export default function Dashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-12">
+      <div className="mb-6">
         <h1 className="text-4xl font-heading font-bold text-slate-900 dark:text-white mb-2">Dashboard</h1>
         <p className="text-slate-600 dark:text-zinc-400 font-ui">Welcome back to the competition management system</p>
       </div>
 
       {/* Statistics Grid */}
-      <div className="grid-hub-4 mb-12">
-        <div className="card card-lg bg-gradient-to-br from-brand-red to-red-700 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <Trophy size={32} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Link to="/competitions" className="cursor-pointer">
+          <div className="card border-2 border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl group-hover:scale-110 transition-transform">
+                <Trophy size={32} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Current Competition</p>
+              {stats.competition ? (
+                <>
+                  <p className="text-lg font-heading font-bold text-slate-900 dark:text-white line-clamp-2">{stats.competition.name}</p>
+                </>
+              ) : (
+                <p className="text-4xl font-heading font-bold text-slate-900 dark:text-white">-</p>
+              )}
+            </div>
           </div>
-          <div className="mb-2">
-            <p className="text-white/80 text-sm font-medium">Current Competition</p>
-            {stats.competition ? (
-              <>
-                <h3 className="text-2xl font-heading font-bold mt-1">{stats.competition.name}</h3>
-                <p className="text-white/70 text-sm mt-1">
-                  {new Date(stats.competition.date).toLocaleDateString()}
-                </p>
-              </>
-            ) : (
-              <p className="text-white/70 text-sm mt-1">No competition configured</p>
-            )}
-          </div>
-          <Link to="/competitions" className="text-white/90 hover:text-white text-sm inline-flex items-center gap-1 mt-2">
-            Manage <ArrowRight size={14} />
-          </Link>
-        </div>
+        </Link>
         <StatCard
           icon={<Users size={32} />}
           label="Athletes"
@@ -102,71 +100,61 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-4">
         {/* Quick Actions */}
-        <div className="lg:col-span-2">
-          <div className="card card-lg">
-            <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link to="/competitions" className="btn btn-primary h-16 justify-start pl-6 group hover:shadow-brand-red">
+        <div>
+          <div className="card card-lg border-2 border-slate-200 dark:border-slate-700">
+            <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link to="/competitions" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Trophy size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">New Competition</div>
-                  <div className="text-xs opacity-80">Create event</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">New Competition</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Create event</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/athletes" className="btn btn-primary h-16 justify-start pl-6 group hover:shadow-brand-red">
+              <Link to="/athletes" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Users size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">Register Athlete</div>
-                  <div className="text-xs opacity-80">Add participant</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">Register Athlete</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Add participant</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/sessions" className="btn btn-primary h-16 justify-start pl-6 group hover:shadow-brand-red">
+              <Link to="/sessions" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Calendar size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">Create Session</div>
-                  <div className="text-xs opacity-80">Schedule event</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">Create Session</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Schedule event</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/technical" className="btn btn-primary h-16 justify-start pl-6 group hover:shadow-brand-red">
+              <Link to="/technical" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Zap size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">Technical Panel</div>
-                  <div className="text-xs opacity-80">Live control</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">Technical Panel</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Live control</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/teams" className="btn btn-secondary h-16 justify-start pl-6 group hover:shadow-lg">
+              <Link to="/teams" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Users size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">Manage Teams</div>
-                  <div className="text-xs opacity-80">Clubs & countries</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">Manage Teams</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Clubs & countries</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/weigh-in" className="btn btn-secondary h-16 justify-start pl-6 group hover:shadow-lg">
+              <Link to="/weigh-in" className="border-2 border-slate-200 dark:border-slate-700 h-16 justify-start pl-6 group hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 rounded-xl px-6">
                 <Download size={24} />
                 <div className="flex-1 text-left">
-                  <div className="font-semibold">Weigh-In</div>
-                  <div className="text-xs opacity-80">Record body weight</div>
+                  <div className="font-semibold text-slate-900 dark:text-white">Weigh-In</div>
+                  <div className="text-xs opacity-80 text-slate-600 dark:text-slate-400">Record body weight</div>
                 </div>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
-          </div>
-        </div>
-
-        {/* System Status */}
-        <div className="card card-lg">
-          <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-6">System Status</h2>
-          <div className="space-y-4">
-            <StatusItem label="API Server" status="online" />
-            <StatusItem label="Database" status="online" />
-            <StatusItem label="Real-time Updates" status="online" />
           </div>
         </div>
       </div>
@@ -176,14 +164,14 @@ export default function Dashboard() {
 
 function StatCard({ icon, label, value, link, highlight, color }) {
   const colorClasses = {
-    'brand-red': 'bg-red-50 dark:bg-red-900/20 text-red-600',
+    'brand-red': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
     'blue': 'bg-blue-50 dark:bg-blue-900/20 text-blue-600',
     'purple': 'bg-purple-50 dark:bg-purple-900/20 text-purple-600',
     'green': 'bg-green-50 dark:bg-green-900/20 text-green-600',
   };
 
   const content = (
-    <div className={`card cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 group ${highlight ? 'ring-2 ring-red-600' : ''}`}>
+    <div className={`card border-2 border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 group ${highlight ? 'ring-2 ring-slate-900 dark:ring-white' : ''}`}>
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3 ${colorClasses[color]} rounded-xl group-hover:scale-110 transition-transform`}>
           {icon}
@@ -197,24 +185,4 @@ function StatCard({ icon, label, value, link, highlight, color }) {
   );
 
   return link ? <Link to={link}>{content}</Link> : content;
-}
-
-function StatusItem({ label, status }) {
-  const isOnline = status === 'online';
-  return (
-    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-zinc-800">
-      <div>
-        <p className="font-ui font-semibold text-slate-900 dark:text-white">{label}</p>
-        <p className="text-xs text-slate-500 dark:text-zinc-400">System connectivity</p>
-      </div>
-      <div className="flex items-center gap-2">
-        {isOnline && (
-          <>
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
-          </>
-        )}
-      </div>
-    </div>
-  );
 }

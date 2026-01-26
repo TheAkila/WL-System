@@ -346,7 +346,7 @@ function WeighInRow({ athlete, onComplete, onClear }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <h4 className="font-bold text-base text-slate-900 dark:text-white mb-3">
-              #{athlete.start_number} {athlete.name}
+              {athlete.name}
             </h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">

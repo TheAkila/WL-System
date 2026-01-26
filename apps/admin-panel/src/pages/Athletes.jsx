@@ -1,8 +1,8 @@
-import { Plus, Users, Search, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import ImageUpload from '../components/ImageUpload';
+
 
 export default function Athletes() {
   const [athletes, setAthletes] = useState([]);
@@ -19,6 +19,10 @@ export default function Athletes() {
     weight_category: '',
     session_id: '',
     team_id: '',
+    id_number: '',
+    registration_number: '',
+    best_total: '',
+    coach_name: '',
   });
   const [editingId, setEditingId] = useState(null);
 
@@ -127,6 +131,10 @@ export default function Athletes() {
       weight_category: '',
       session_id: '',
       team_id: '',
+      id_number: '',
+      registration_number: '',
+      best_total: '',
+      coach_name: '',
     });
     setEditingId(null);
   };
@@ -227,87 +235,134 @@ export default function Athletes() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Name with Initials"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input"
-              />
-              <input
-                type="date"
-                placeholder="Date of Birth"
-                value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                className="input"
-              />
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="input"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-              <select
-                value={formData.weight_category}
-                onChange={(e) => setFormData({ ...formData, weight_category: e.target.value })}
-                className="input"
-                required
-              >
-                <option value="">Select Weight Class</option>
-                {getAvailableWeightClasses().map((wc) => (
-                  <option key={wc} value={wc}>{wc}kg</option>
-                ))}
-              </select>
-              
-              <select
-                value={formData.session_id}
-                onChange={(e) => {
-                  setFormData({ 
-                    ...formData, 
-                    session_id: e.target.value,
-                    weight_category: '' // Reset weight category when session changes
-                  });
-                }}
-                className="input"
-              >
-                <option value="">Select Session</option>
-                {sessions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={formData.team_id || ''}
-                onChange={(e) => setFormData({ ...formData, team_id: e.target.value || null })}
-                className="input"
-              >
-                <option value="">No Team</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} ({t.country})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Photo Upload (only show when editing) */}
-            {editingId && (
-              <div className="pt-4 border-t border-slate-200 dark:border-zinc-700">
-                <ImageUpload
-                  currentImageUrl={formData.photo_url}
-                  uploadEndpoint={`/uploads/athletes/${editingId}/photo`}
-                  onUploadSuccess={(data) => {
-                    setFormData({ ...formData, photo_url: data.photoUrl });
-                    fetchAthletes();
-                  }}
-                  label="Athlete Photo"
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name with Initials</label>
+                <input
+                  type="text"
+                  placeholder="Name with Initials"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input"
                 />
               </div>
-            )}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">DOB</label>
+                <input
+                  type="date"
+                  value={formData.birth_date}
+                  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gender</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="input"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight Class</label>
+                <select
+                  value={formData.weight_category}
+                  onChange={(e) => setFormData({ ...formData, weight_category: e.target.value })}
+                  className="input"
+                  required
+                >
+                  <option value="">Select Weight Class</option>
+                  {getAvailableWeightClasses().map((wc) => (
+                    <option key={wc} value={wc}>{wc}kg</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Session</label>
+                <select
+                  value={formData.session_id}
+                  onChange={(e) => {
+                    setFormData({ 
+                      ...formData, 
+                      session_id: e.target.value,
+                      weight_category: '' // Reset weight category when session changes
+                    });
+                  }}
+                  className="input"
+                  required
+                >
+                  <option value="">Select Session</option>
+                  {sessions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team</label>
+                <select
+                  value={formData.team_id || ''}
+                  onChange={(e) => setFormData({ ...formData, team_id: e.target.value || null })}
+                  className="input"
+                >
+                  <option value="">No Team</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.country})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ID Number</label>
+                <input
+                  type="text"
+                  placeholder="ID Number"
+                  value={formData.id_number || ''}
+                  onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Registration Number (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Registration Number"
+                  value={formData.registration_number || ''}
+                  onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Best Total (kg)</label>
+                <input
+                  type="number"
+                  placeholder="Best Total"
+                  value={formData.best_total || ''}
+                  onChange={(e) => setFormData({ ...formData, best_total: e.target.value })}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Coach Name</label>
+                <input
+                  type="text"
+                  placeholder="Coach Name"
+                  value={formData.coach_name || ''}
+                  onChange={(e) => setFormData({ ...formData, coach_name: e.target.value })}
+                  className="input"
+                />
+              </div>
+            </div>
 
             <div className="flex gap-4">
               <button 
@@ -352,7 +407,6 @@ export default function Athletes() {
         </div>
       ) : filteredAthletes.length === 0 ? (
         <div className="card text-center py-16">
-          <Users size={48} className="mx-auto mb-4 text-gray-400" />
           <h3 className="font-heading text-2xl font-black text-black mb-2">No athletes found</h3>
           <p className="font-ui text-gray-600">Register athletes to get started</p>
         </div>
@@ -361,7 +415,6 @@ export default function Athletes() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b-2 border-black">
-                <th className="text-left p-4 font-heading font-black">Photo</th>
                 <th className="text-left p-4 font-heading font-black">Name</th>
                 <th className="text-left p-4 font-heading font-black">Team</th>
                 <th className="text-left p-4 font-heading font-black">Gender</th>
@@ -373,19 +426,6 @@ export default function Athletes() {
             <tbody>
               {filteredAthletes.map((athlete) => (
                 <tr key={athlete.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="p-4">
-                    {athlete.photo_url ? (
-                      <img 
-                        src={athlete.photo_url} 
-                        alt={athlete.name}
-                        className="w-12 h-12 object-cover rounded-lg border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-slate-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
-                        <Users size={20} className="text-slate-400" />
-                      </div>
-                    )}
-                  </td>
                   <td className="p-4 font-bold">{athlete.name}</td>
                   <td className="p-4">
                     {athlete.team ? (

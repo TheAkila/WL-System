@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Printer, Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock, Monitor } from 'lucide-react';
+import { Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock, Monitor, Maximize2, Minimize2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import AttemptCell from './AttemptCell';
@@ -8,7 +8,7 @@ import CompetitionTimer from './CompetitionTimer';
 import WeighInModal from './WeighInModal';
 import PhaseControlButtons from './PhaseControlButtons';
 
-export default function SessionSheet({ session: initialSession, onBack }) {
+export default function SessionSheet({ session: initialSession, onBack, onToggleFullscreen, isFullscreen }) {
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,6 +26,7 @@ export default function SessionSheet({ session: initialSession, onBack }) {
   const [showWeighInModal, setShowWeighInModal] = useState(false); // Phase 2: Weigh-in modal state
   const [selectedWeightClass, setSelectedWeightClass] = useState(null); // Multi-class: selected weight class
   const [availableWeightClasses, setAvailableWeightClasses] = useState([]); // Multi-class: all weight classes in session
+  const [previousAthleteId, setPreviousAthleteId] = useState(null); // Track athlete ID for timer logic
 
   const sessionId = session?.id;
 
@@ -222,25 +223,34 @@ export default function SessionSheet({ session: initialSession, onBack }) {
 
   // Update timer when next lifter changes (IWF Rules)
   useEffect(() => {
-    if (nextLifter) {
+    if (nextLifter && nextLifter.athlete) {
       // IWF Rule 6.6.3 & 6.6.4:
       // - 60 seconds for first attempt or when switching athletes
       // - 120 seconds for consecutive attempts by same athlete
+      const currentAthleteId = nextLifter.athlete.id;
       let duration = 60;
       
-      if (previousLifter && previousLifter.athlete.id === nextLifter.athlete.id) {
-        // Same athlete, consecutive attempt
+      console.log('🏋️ Next Lifter:', currentAthleteId, nextLifter.displayName);
+      console.log('📋 Previous Athlete ID:', previousAthleteId);
+      
+      // Check if same athlete as previous
+      if (previousAthleteId && previousAthleteId === currentAthleteId) {
+        // Same athlete, consecutive attempt - 120 seconds
         duration = 120;
+        console.log('⏱️ SAME ATHLETE - Setting timer to 120s');
+      } else {
+        // Different athlete or first lifter - 60 seconds
+        console.log('⏱️ DIFFERENT ATHLETE - Setting timer to 60s');
       }
       
       setTimerDuration(duration);
       setTimerKey(prev => prev + 1); // Reset timer
       setTimerRunning(false); // Don't auto-start, official will start manually
       
-      // Update previous lifter
-      setPreviousLifter(nextLifter);
+      // Update previous athlete ID for next comparison
+      setPreviousAthleteId(currentAthleteId);
     }
-  }, [nextLifter, previousLifter]);
+  }, [nextLifter]);
 
   // Load session data
   const fetchSessionData = useCallback(async () => {
@@ -471,10 +481,6 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleExport = async () => {
     try {
       const exportData = {
@@ -599,166 +605,179 @@ export default function SessionSheet({ session: initialSession, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-zinc-900 p-2">
-      {/* Header */}
-      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-4 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className={`${isFullscreen ? 'h-screen w-screen overflow-hidden flex flex-col' : 'min-h-screen'} bg-slate-100 dark:bg-zinc-900 ${isFullscreen ? 'p-0' : 'p-2'}`}>
+      {/* Header - Hidden in fullscreen */}
+      {!isFullscreen && (
+      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full sm:w-auto">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-xs sm:text-sm bg-slate-100 dark:bg-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-600 rounded-lg transition-colors whitespace-nowrap"
             >
-              <ArrowLeft size={16} />
-              Back
+              <ArrowLeft size={14} className="hidden sm:inline" />
+              <ArrowLeft size={12} className="sm:hidden" />
+              <span className="hidden xs:inline">Back</span>
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-white truncate">
                 {session?.name || 'Loading...'}
               </h1>
-              <div className="text-sm text-slate-600 dark:text-zinc-400">
-                Technical Panel - Spreadsheet Sheet
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 truncate">
+                Technical Panel - Spreadsheet
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto">
             {saving && (
-              <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">
-                 Saving...
+              <span className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-semibold hidden sm:inline">
+                Saving...
               </span>
             )}
             {!saving && lastSaved && (
-              <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 font-semibold">
-                <Check size={14} />
+              <span className="flex items-center gap-1 text-xs sm:text-sm text-green-600 dark:text-green-400 font-semibold hidden sm:flex">
+                <Check size={12} className="sm:w-3.5 sm:h-3.5" />
                 Saved
               </span>
             )}
-            {/* Phase 2: PhaseControlButtons Component */}
-            <PhaseControlButtons
-              session={session}
-              onStateChange={handleSessionStateChange}
-              onRefresh={fetchSessionData}
-              compact={true}
-              className="flex gap-2"
-            />
             <button
-              onClick={handleActivateDisplay}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              title="Push this session to the main display screen"
+              onClick={onToggleFullscreen}
+              className="flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 md:py-2 text-xs md:text-sm bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-colors"
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
-              <Monitor size={16} />
-              Display
+              {isFullscreen ? <Minimize2 size={12} className="md:w-4 md:h-4" /> : <Maximize2 size={12} className="md:w-4 md:h-4" />}
+              <span className="hidden sm:inline text-xs md:text-sm">{isFullscreen ? 'Exit' : 'FS'}</span>
             </button>
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+              onClick={handleActivateDisplay}
+              className="hidden md:flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              title="Push this session to the main display screen"
             >
-              <Printer size={16} />
-              Print
+              <Monitor size={14} className="md:w-4 md:h-4" />
+              <span className="hidden lg:inline">Display</span>
             </button>
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              className="hidden lg:flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 md:py-2 text-xs md:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
             >
-              <Download size={16} />
-              Export
+              <Download size={12} className="lg:w-4 lg:h-4" />
+              <span className="hidden xl:inline">Export</span>
             </button>
             <button
               onClick={handleClearAttempts}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="hidden xl:flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-4 py-1 lg:py-2 text-xs lg:text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              title="Clear all attempts"
             >
-              <Trash2 size={16} />
-              Clear Attempts
-            </button>
-            <button
-              onClick={() => {
-                setForceEditMode(!forceEditMode);
-                toast.success(forceEditMode ? 'Force Edit: OFF' : 'Force Edit: ON - All restrictions disabled');
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-semibold ${
-                forceEditMode 
-                  ? 'bg-red-700 hover:bg-red-800 text-white ring-2 ring-red-500' 
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-            >
-              <Unlock size={16} />
-              Force Edit {forceEditMode ? '(ON)' : ''}
+              <Trash2 size={12} className="lg:w-4 lg:h-4" />
+              <span className="hidden xl:inline">Clear</span>
             </button>
           </div>
         </div>
       </div>
+      )}
 
-      {/* Next Lifter Panel - Live Update with Timer */}
+      {/* Fullscreen Header - Show only in fullscreen mode */}
+      {isFullscreen && (
+        <div className="bg-white dark:bg-zinc-800 shadow-md p-2 sm:p-3 md:p-4 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-700">
+          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+            <h2 className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 truncate">
+              {session?.competition?.name || 'Competition'}
+            </h2>
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white truncate">
+              {session?.name || 'Session'}
+            </h1>
+          </div>
+          {/* Timer in fullscreen header */}
+          {nextLifter && (
+            <div className="flex items-center gap-2 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 whitespace-nowrap">
+             
+              <CompetitionTimer 
+                key={timerKey}
+                duration={timerDuration} 
+                isRunning={timerRunning}
+                onStart={() => setTimerRunning(true)}
+                onPause={() => setTimerRunning(false)}
+                onReset={() => {
+                  setTimerRunning(false);
+                  setTimerKey(prev => prev + 1);
+                }}
+                compact={true} 
+              />
+            </div>
+          )}
+          <button
+            onClick={onToggleFullscreen}
+            className="fixed bottom-3 sm:bottom-4 right-3 sm:right-4 z-50 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium"
+            title="Exit fullscreen"
+          >
+            <Minimize2 size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Exit</span>
+          </button>
+        </div>
+      )}
+
+      {/* Next Lifter Panel - Live Update with Timer - Optimized for fullscreen */}
       {nextLifter && (
-        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden mb-4">
-          <div className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-sm font-medium">
+        <div className={`bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden ${isFullscreen ? 'mx-0 mt-2 mb-2 p-2 rounded-none' : 'mb-4'}`}>
+          <div className="flex items-center justify-between p-2">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-xs font-medium">
                NEXT LIFTER
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-slate-800 dark:text-white">
+                <span className="text-base font-bold text-slate-800 dark:text-white">
                   {nextLifter.displayName}
                 </span>
                 <span className="text-slate-400 dark:text-zinc-500">•</span>
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
+                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
                   {nextLifter.liftType === 'snatch' ? 'Snatch' : 'Clean & Jerk'}
                 </span>
-                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
+                <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-medium">
                   Attempt {nextLifter.attemptNumber}
                 </span>
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-semibold">
+                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-semibold">
                   {nextLifter.weight} kg
                 </span>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              
-             
-              <div className="h-6 w-px bg-slate-300 dark:bg-zinc-600"></div>
-              {/* IWF Timer Rule Indicator */}
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                timerDuration === 120 
-                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200' 
-                  : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-              }`}>
-               
-              </span>
-              <div className="flex items-center gap-2">
-                <Timer size={16} className="text-slate-600 dark:text-zinc-400" />
-                <CompetitionTimer 
-                  key={timerKey}
-                  duration={timerDuration} 
-                  isRunning={timerRunning}
-                  onStart={() => setTimerRunning(true)}
-                  onPause={() => setTimerRunning(false)}
-                  onReset={() => {
-                    setTimerRunning(false);
-                    setTimerKey(prev => prev + 1);
-                  }}
-                  compact={true} 
-                />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <div className="h-5 w-px bg-slate-300 dark:bg-zinc-600"></div>
+              {/* IWF Timer Rule Indicator - shown in header */}
             </div>
           </div>
         </div>
       )}
 
-      {/* Spreadsheet Sheet */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-3">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+      {/* Spreadsheet Sheet - Optimized for fullscreen */}
+      <div className={`bg-white dark:bg-zinc-900 ${isFullscreen ? 'rounded-none shadow-none p-1 sm:p-2 flex-1 overflow-auto relative' : 'rounded-lg shadow-lg p-2 sm:p-3'}`}>
+        {!isFullscreen && (
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white truncate">
               Competition Sheet
             </h2>
             {availableWeightClasses.length > 1 && (
-              <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 mt-0.5 sm:mt-1 truncate">
                 Weight Classes: {availableWeightClasses.map(wc => `${wc}kg`).join(' / ')}
               </p>
             )}
           </div>
         </div>
+        )}
+
+        {/* Fullscreen Exit Button - Bottom Right (only in fullscreen) */}
+        {isFullscreen && (
+          <button
+            onClick={onToggleFullscreen}
+            className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+            title="Exit fullscreen"
+          >
+            <Minimize2 size={16} />
+            Exit
+          </button>
+        )}
 
         {/* Loading/Error States */}
         {loading && (
@@ -839,12 +858,14 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                   
                   return sortedClasses.map(weightClass => (
                     <div key={weightClass} className="contents">
-                      {/* Weight Class Section Header - Clean Design */}
-                      <tr className="h-11 bg-gray-300 dark:bg-gray-700 border-2 border-gray-400 dark:border-gray-600">
+                      {/* Weight Class Section Header - Only show for multiple classes */}
+                      {sortedClasses.length > 1 && (
+                      <tr className="h-11 bg-black bg-opacity-10 dark:bg-black dark:bg-opacity-20 border-2 border-gray-400 dark:border-gray-600">
                         <td colSpan="14" className="p-3 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                           {weightClass}kg Weight Class 
                         </td>
                       </tr>
+                      )}
                       
                       {/* Athletes in this weight class */}
                       {grouped[weightClass].map((athlete, classIndex) => {

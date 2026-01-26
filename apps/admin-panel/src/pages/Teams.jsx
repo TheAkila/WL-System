@@ -1,8 +1,7 @@
-import { Plus, Users, Search, Edit2, Trash2, Globe } from 'lucide-react';
+import { Plus, Users, Search, Edit2, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import ImageUpload from '../components/ImageUpload';
 
 export default function Teams() {
   const [teams, setTeams] = useState([]);
@@ -14,6 +13,7 @@ export default function Teams() {
   const [formData, setFormData] = useState({
     name: '',
     country: '',
+    manager_phone: '',
   });
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function Teams() {
       if (editingId) {
         await api.put(`/teams/${editingId}`, formData);
         toast.success('Team updated successfully');
-        setFormData({ name: '', country: '' });
+        setFormData({ name: '', country: '', manager_phone: '' });
         setShowForm(false);
         setEditingId(null);
         fetchTeams();
@@ -62,9 +62,12 @@ export default function Teams() {
         setFormData({
           name: response.data.data.name,
           country: response.data.data.country,
-          logo_url: response.data.data.logo_url,
+          manager_phone: response.data.data.manager_phone || '',
+          logo_url: response.data.data.logo_url || '',
         });
         // Keep the form open so user can upload logo
+        setShowForm(true);
+        fetchTeams();
       }
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Operation failed');
@@ -78,6 +81,7 @@ export default function Teams() {
     setFormData({
       name: team.name,
       country: team.country,
+      manager_phone: team.manager_phone || '',
       logo_url: team.logo_url,
     });
     setShowForm(true);
@@ -105,7 +109,7 @@ export default function Teams() {
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: '', country: '' });
+            setFormData({ name: '', country: '', manager_phone: '' });
             setShowForm(!showForm);
           }}
           className="btn btn-primary flex items-center gap-2"
@@ -123,40 +127,41 @@ export default function Teams() {
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Team Name"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input"
-              />
-              <input
-                type="text"
-                placeholder="Team Code (3 letters, e.g., USA)"
-                required
-                maxLength="3"
-                minLength="3"
-                value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value.toUpperCase() })}
-                className="input"
-              />
-            </div>
-            
-            {/* Logo Upload - show when editing or just created */}
-            {editingId && (
-              <div className="pt-4 border-t border-slate-200 dark:border-zinc-700">
-                <ImageUpload
-                  currentImageUrl={formData.logo_url}
-                  uploadEndpoint={`/uploads/teams/${editingId}/logo`}
-                  onUploadSuccess={(data) => {
-                    setFormData({ ...formData, logo_url: data.logoUrl });
-                    toast.success('Logo uploaded successfully!');
-                  }}
-                  label="Team Logo"
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team Name</label>
+                <input
+                  type="text"
+                  placeholder="Team Name"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input"
                 />
               </div>
-            )}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team Code</label>
+                <input
+                  type="text"
+                  placeholder="Team Code (3 letters, e.g., USA)"
+                  required
+                  maxLength="3"
+                  minLength="3"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value.toUpperCase() })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Manager Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="Manager Phone Number"
+                  value={formData.manager_phone || ''}
+                  onChange={(e) => setFormData({ ...formData, manager_phone: e.target.value })}
+                  className="input"
+                />
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button type="submit" disabled={loading} className="btn btn-primary">
@@ -167,7 +172,7 @@ export default function Teams() {
                 onClick={() => {
                   setShowForm(false);
                   setEditingId(null);
-                  setFormData({ name: '', country: '' });
+                  setFormData({ name: '', country: '', manager_phone: '' });
                   fetchTeams();
                 }}
                 className="btn btn-secondary"
@@ -180,15 +185,15 @@ export default function Teams() {
       )}
 
       {/* Search */}
-      <div className="card mb-6 p-4">
+      <div className="mb-4">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Search teams by name or country..."
+            placeholder="Search teams..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input pl-12"
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
           />
         </div>
       </div>
@@ -214,48 +219,33 @@ export default function Teams() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {filteredTeams.map((team) => (
-            <div key={team.id} className="card hover:shadow-xl transition-shadow">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  {/* Team Logo */}
-                  {team.logo_url ? (
-                    <img
-                      src={team.logo_url}
-                      alt={team.name}
-                      className="w-16 h-16 object-cover rounded-lg border-2 border-slate-200 dark:border-zinc-700"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 p-2 bg-blue-600/20 text-blue-600 rounded-lg flex items-center justify-center">
-                      <Users size={32} />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 ml-4">
-                    <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">
-                      {team.name}
-                    </h3>
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
-                      <Globe size={16} />
-                      <span className="font-medium">{team.country}</span>
-                    </div>
-                  </div>
+            <div key={team.id} className="card border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200 flex flex-col">
+              <div className="p-2 flex-1">
+                <div className="mb-2">
+                  <h3 className="text-base font-heading font-bold text-slate-900 dark:text-white truncate">
+                    {team.name}
+                  </h3>
                 </div>
+              </div>
 
-                <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-zinc-700">
+              <div className="border-t border-slate-200 dark:border-slate-700 p-2">
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => handleEdit(team)}
-                    className="flex-1 py-2 px-4 bg-blue-50 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    className="py-1 px-1.5 bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-md font-medium text-xs transition-colors inline-flex items-center justify-center gap-0.5 flex-1"
+                    title="Edit team"
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={12} />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleDelete(team.id)}
-                    className="flex-1 py-2 px-4 bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    className="py-1 px-1.5 bg-rose-50 dark:bg-zinc-800 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-zinc-700 rounded-md font-medium text-xs transition-colors inline-flex items-center justify-center gap-0.5 flex-1"
+                    title="Delete team"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={12} />
                     <span>Delete</span>
                   </button>
                 </div>

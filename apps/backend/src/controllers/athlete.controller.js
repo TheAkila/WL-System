@@ -114,7 +114,7 @@ export const getAthlete = async (req, res, next) => {
 export const createAthlete = async (req, res, next) => {
   try {
     // Validate required fields
-    const { name, gender, weight_category, session_id, team_id } = req.body;
+    const { name, gender, weight_category, session_id, team_id, id_number, registration_number, best_total, coach_name, birth_date } = req.body;
     
     if (!name || !name.trim()) {
       throw new AppError('Athlete name is required', 400);
@@ -151,8 +151,12 @@ export const createAthlete = async (req, res, next) => {
       weight_category,
       session_id,
       country, // Set country from team or default
-      birth_date: req.body.birth_date || null,
+      birth_date: birth_date || null,
       team_id: team_id || null,
+      id_number: id_number || null,
+      registration_number: registration_number || null,
+      best_total: best_total ? parseFloat(best_total) : null,
+      coach_name: coach_name || null,
       // Note: body_weight, start_number, and other fields are managed separately or auto-generated
     };
 
@@ -220,9 +224,15 @@ export const updateAthlete = async (req, res, next) => {
       }
     }
 
+    // Process best_total if provided (convert to number)
+    const updateData = { ...req.body };
+    if (updateData.best_total) {
+      updateData.best_total = parseFloat(updateData.best_total);
+    }
+
     const { data, error } = await supabase
       .from('athletes')
-      .update(req.body)
+      .update(updateData)
       .eq('id', req.params.id)
       .select();
 

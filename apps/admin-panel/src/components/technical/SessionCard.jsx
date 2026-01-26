@@ -13,7 +13,7 @@ const StateBadge = ({ state }) => {
     weighing: { label: 'Weighing', color: 'bg-blue-100 text-blue-700' },
     ready_to_start: { label: 'Ready to Start', color: 'bg-green-100 text-green-700' },
     active: { label: 'Active', color: 'bg-purple-100 text-purple-700' },
-    snatch_active: { label: 'Snatch Active', color: 'bg-red-100 text-red-700' },
+    snatch_active: { label: 'Snatch Active', color: 'bg-slate-100 text-slate-700' },
     snatch_complete: { label: 'Snatch Complete', color: 'bg-yellow-100 text-yellow-700' },
     clean_jerk_active: { label: 'C&J Active', color: 'bg-orange-100 text-orange-700' },
     complete: { label: 'Complete', color: 'bg-green-700 text-white' },
@@ -196,7 +196,7 @@ export default function SessionCard({
     >
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="mb-4 p-3 bg-slate-100 border border-slate-300 rounded text-slate-700 text-sm">
           {error}
         </div>
       )}

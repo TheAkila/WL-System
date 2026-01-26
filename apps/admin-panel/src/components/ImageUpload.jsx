@@ -166,7 +166,7 @@ export default function ImageUpload({
               {currentImageUrl && !uploading && (
                 <button
                   onClick={handleDelete}
-                  className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Delete image"
                 >
                   <X size={16} />

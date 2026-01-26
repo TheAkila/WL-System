@@ -81,32 +81,39 @@ export default function CompetitionTimer({ isRunning, onStart, onPause, onReset,
     return 'text-green-600 dark:text-green-400';
   };
 
-  // Compact version for nav bar
+  // Compact version for nav bar - Large timer display only
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
-        <span className={`text-sm font-mono font-bold ${getTimerColor()}`}>
+      <div className="flex items-center gap-1.5">
+        <div className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded font-mono font-bold text-2xl sm:text-3xl md:text-4xl ${
+          getTimerColor().includes('red') 
+            ? 'bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-600' 
+            : 'bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-600'
+        }`}>
           {minutes}:{seconds.toString().padStart(2, '0')}
-        </span>
+        </div>
         {!timerActive ? (
           <button
             onClick={handleStart}
-            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700"
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Start timer"
             disabled={timeLeft === 0}
           >
-            <Play size={14} className="text-green-600" />
+            <Play size={14} className="text-green-600 dark:text-green-400" />
           </button>
         ) : (
           <button
             onClick={handlePause}
-            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700"
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+            title="Pause timer"
           >
-            <Pause size={14} className="text-orange-600" />
+            <Pause size={14} className="text-orange-600 dark:text-orange-400" />
           </button>
         )}
         <button
           onClick={handleReset}
-          className="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700"
+          className="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+          title="Reset timer"
         >
           <RotateCcw size={14} className="text-slate-600 dark:text-zinc-400" />
         </button>
@@ -115,55 +122,58 @@ export default function CompetitionTimer({ isRunning, onStart, onPause, onReset,
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-lg p-4 border-2 border-slate-300 dark:border-zinc-700 shadow-lg">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white dark:bg-zinc-800 rounded-lg p-3 sm:p-4 border-2 border-slate-300 dark:border-zinc-700 shadow-lg">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
-          <Clock size={20} className="text-slate-600 dark:text-zinc-400" />
-          <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+          <Clock size={18} className="sm:w-5 sm:h-5 text-slate-600 dark:text-zinc-400" />
+          <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-300">
             Competition Timer
           </span>
         </div>
         <span className="text-xs text-slate-500 dark:text-zinc-500">
-          {duration === 60 ? '1 minute' : '2 minutes'}
+          {duration === 60 ? '1 min' : '2 min'}
         </span>
       </div>
 
       {/* Timer Display */}
-      <div className={`text-6xl font-black text-center mb-4 tabular-nums ${getTimerColor()}`}>
+      <div className={`text-5xl sm:text-6xl font-black text-center mb-3 sm:mb-4 tabular-nums ${getTimerColor()}`}>
         {minutes}:{seconds.toString().padStart(2, '0')}
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-2 flex-wrap">
         {!timerActive ? (
           <button
             onClick={handleStart}
-            className="btn btn-success flex items-center gap-2 px-4 py-2"
+            className="btn btn-success flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base"
             disabled={timeLeft === 0}
+            title="Start the timer"
           >
-            <Play size={18} />
-            Start
+            <Play size={16} className="sm:w-5 sm:h-5" />
+            <span className="hidden xs:inline">Start</span>
           </button>
         ) : (
           <button
             onClick={handlePause}
-            className="btn btn-warning flex items-center gap-2 px-4 py-2"
+            className="btn btn-warning flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base"
+            title="Pause the timer"
           >
-            <Pause size={18} />
-            Pause
+            <Pause size={16} className="sm:w-5 sm:h-5" />
+            <span className="hidden xs:inline">Pause</span>
           </button>
         )}
         <button
           onClick={handleReset}
-          className="btn btn-secondary flex items-center gap-2 px-4 py-2"
+          className="btn btn-secondary flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base"
+          title="Reset the timer"
         >
-          <RotateCcw size={18} />
-          Reset
+          <RotateCcw size={16} className="sm:w-5 sm:h-5" />
+          <span className="hidden xs:inline">Reset</span>
         </button>
       </div>
 
       {/* Progress Bar */}
-      <div className="mt-4 h-2 bg-slate-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+      <div className="mt-3 sm:mt-4 h-2 sm:h-3 bg-slate-200 dark:bg-zinc-700 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-1000 ${
             timeLeft === 0 ? 'bg-red-600' :

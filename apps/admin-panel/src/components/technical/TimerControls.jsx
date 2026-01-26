@@ -179,19 +179,19 @@ export default function TimerControls({ sessionId }) {
   };
 
   const getTimerColor = () => {
-    if (timerState.timeRemaining <= 10) return 'text-red-600 dark:text-red-400 animate-pulse';
+    if (timerState.timeRemaining <= 10) return 'text-slate-600 dark:text-slate-400 animate-pulse';
     if (timerState.timeRemaining <= 30) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-green-600 dark:text-green-400';
   };
 
   const getProgressColor = () => {
-    if (timerState.timeRemaining <= 10) return 'bg-red-500 animate-pulse';
+    if (timerState.timeRemaining <= 10) return 'bg-slate-500 animate-pulse';
     if (timerState.timeRemaining <= 30) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
   const getBorderColor = () => {
-    if (timerState.timeRemaining <= 10) return 'border-red-500 shadow-lg shadow-red-500/50';
+    if (timerState.timeRemaining <= 10) return 'border-slate-500 shadow-lg shadow-slate-500/50';
     if (timerState.timeRemaining <= 30) return 'border-yellow-500 shadow-lg shadow-yellow-500/50';
     return 'border-blue-500';
   };
@@ -246,7 +246,7 @@ export default function TimerControls({ sessionId }) {
       {showWarning && (
         <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
           timerState.timeRemaining <= 10 
-            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 animate-pulse' 
+            ? 'bg-slate-100 dark:bg-slate-900/30 text-slate-800 dark:text-slate-300 animate-pulse' 
             : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
         }`}>
           <AlertTriangle size={20} />

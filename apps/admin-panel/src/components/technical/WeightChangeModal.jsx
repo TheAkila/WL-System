@@ -197,8 +197,8 @@ export default function WeightChangeModal({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-slate-100 border border-slate-300 rounded-lg p-3">
+              <p className="text-sm text-slate-800">{error}</p>
             </div>
           )}
 

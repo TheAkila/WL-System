@@ -40,10 +40,6 @@ export default function SessionSelector({ sessions, onSelectSession, loading }) 
                 {session.status}
               </span>
             </div>
-            <p className="text-gray-600 text-sm">
-              {session.gender === 'male' ? '🚹 Men' : '🚺 Women'} •{' '}
-              {session.weight_category}kg
-            </p>
             {session.competition && (
               <p className="text-gray-500 text-xs mt-2">{session.competition.name}</p>
             )}

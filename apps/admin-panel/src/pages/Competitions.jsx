@@ -1,4 +1,4 @@
-import { Trophy, Calendar, MapPin, Edit2, Save, Trash2 } from 'lucide-react';
+import { Edit2, Save, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -158,17 +158,15 @@ export default function Competitions() {
           <div className="flex gap-3">
             <button
               onClick={() => setEditing(true)}
-              className="btn btn-primary flex items-center gap-2"
+              className="btn btn-primary"
             >
-              <Edit2 size={20} />
-              <span>Edit Competition</span>
+              Edit Competition
             </button>
             <button
               onClick={handleDelete}
-              className="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+              className="btn bg-red-600 hover:bg-red-700 text-white"
             >
-              <Trash2 size={20} />
-              <span>Delete Competition</span>
+              Delete Competition
             </button>
           </div>
         )}
@@ -275,25 +273,9 @@ export default function Competitions() {
               </select>
             </div>
 
-            {/* Logo Upload (only show when competition exists) */}
-            {competition && (
-              <div className="pt-4 border-t border-slate-200 dark:border-zinc-700">
-                <ImageUpload
-                  currentImageUrl={formData.logo_url}
-                  uploadEndpoint={`/uploads/competitions/${competition.id}/logo`}
-                  onUploadSuccess={(data) => {
-                    setFormData({ ...formData, logo_url: data.logoUrl });
-                    fetchCompetition();
-                  }}
-                  label="Competition Logo"
-                />
-              </div>
-            )}
-
             <div className="flex gap-4">
               <button type="submit" className="btn btn-primary flex-1">
-                <Save size={20} />
-                <span>{competition ? 'Save Changes' : 'Create Competition'}</span>
+                {competition ? 'Save Changes' : 'Create Competition'}
               </button>
               {competition && (
                 <button 
@@ -312,49 +294,40 @@ export default function Competitions() {
         /* Display View */
         <div className="card card-lg">
           <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Trophy size={48} className="text-brand-red" />
-              <div>
-                <h2 className="text-3xl font-heading font-bold text-slate-900 dark:text-white">
-                  {competition.name}
-                </h2>
-                <span
-                  className={`badge text-xs mt-2 ${
-                    competition.status === 'active'
-                      ? 'badge-success'
-                      : competition.status === 'upcoming'
-                      ? 'badge-info'
-                      : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300'
-                  }`}
-                >
-                  {competition.status.toUpperCase()}
-                </span>
-              </div>
+            <div>
+              <h2 className="text-3xl font-heading font-bold text-slate-900 dark:text-white">
+                {competition.name}
+              </h2>
+              <span
+                className={`badge text-xs mt-2 ${
+                  competition.status === 'active'
+                    ? 'badge-success'
+                    : competition.status === 'upcoming'
+                    ? 'badge-info'
+                    : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300'
+                }`}
+              >
+                {competition.status.toUpperCase()}
+              </span>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
-              <Calendar size={20} className="text-slate-400" />
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-zinc-500">Date</p>
-                <p className="font-medium text-slate-900 dark:text-white">
-                  {new Date(competition.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-              </div>
+            <div className="text-slate-600 dark:text-zinc-400">
+              <p className="text-sm font-medium text-slate-500 dark:text-zinc-500">Date</p>
+              <p className="font-medium text-slate-900 dark:text-white">
+                {new Date(competition.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
-              <MapPin size={20} className="text-slate-400" />
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-zinc-500">Location</p>
-                <p className="font-medium text-slate-900 dark:text-white">{competition.location}</p>
-              </div>
+            <div className="text-slate-600 dark:text-zinc-400">
+              <p className="text-sm font-medium text-slate-500 dark:text-zinc-500">Location</p>
+              <p className="font-medium text-slate-900 dark:text-white">{competition.location}</p>
             </div>
 
             {competition.organizer && (

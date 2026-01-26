@@ -50,13 +50,13 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900 transition-colors duration-300">
       {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700 backdrop-blur-md bg-white/80 dark:bg-zinc-800/80">
-        <div className="flex items-center justify-between py-4 px-8">
+      <nav className="fixed top-0 left-0 right-0 z-50 h-20 bg-white dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700 backdrop-blur-md bg-white/80 dark:bg-zinc-800/80">
+        <div className="flex items-center justify-between py-2 px-8 h-full">
           {/* Left: Logo and Title */}
           <div className="flex items-center gap-3">
-            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="w-16 h-16" />
+            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="w-12 h-12" />
             <div>
-              <h1 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Lifting Live Arena</h1>
+              <h1 className="text-lg font-heading font-bold text-slate-900 dark:text-white">Competition Management System</h1>
               <p className="text-xs text-slate-500 dark:text-zinc-400 font-ui">Powered by LiftingSocial</p>
             </div>
           </div>
@@ -109,9 +109,9 @@ export default function Layout() {
         </div>
       </nav>
 
-      <div className="flex pt-20">
+      <div className="flex pt-0">
         {/* Sidebar Navigation */}
-        <aside className={`fixed left-0 top-20 h-[calc(100vh-80px)] bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 overflow-y-auto transition-all duration-300 ease-in-out z-40 ${
+        <aside className={`fixed left-0 top-20 bottom-0 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 overflow-y-auto transition-all duration-300 ease-in-out z-40 ${
           sidebarOpen ? 'w-64' : 'w-0'
         }`}>
           <nav className="p-4 space-y-1">
@@ -121,9 +121,9 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl font-ui font-medium transition-all duration-200 whitespace-nowrap ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-lg font-ui font-medium transition-all duration-200 whitespace-nowrap ${
                     isActive
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                      ? 'bg-slate-900 text-white'
                       : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
                   }`}
                 >
@@ -146,9 +146,9 @@ export default function Layout() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-4 px-4 py-3 rounded-xl font-ui font-medium transition-all duration-200 whitespace-nowrap ${
+                      className={`flex items-center gap-4 px-4 py-3 rounded-lg font-ui font-medium transition-all duration-200 whitespace-nowrap ${
                         isActive
-                          ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                          ? 'bg-slate-900 text-white'
                           : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
                       }`}
                     >
@@ -163,7 +163,7 @@ export default function Layout() {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'} p-8`}>
+        <main className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'} mt-20 p-8`}>
           <Outlet />
         </main>
       </div>

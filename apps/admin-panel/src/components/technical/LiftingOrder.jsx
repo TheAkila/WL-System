@@ -175,7 +175,7 @@ export default function LiftingOrder({ athletes, currentAttempt, onDeclareAttemp
                     <div className={`text-xs font-ui mt-1 ${
                       athlete.last_attempt_result === 'success' 
                         ? 'text-green-600' 
-                        : 'text-red-600'
+                        : 'text-slate-600'
                     }`}>
                       Last: {athlete.last_attempt_result === 'success' ? '✓ Success' : '✗ Failed'}
                     </div>
@@ -225,7 +225,7 @@ export default function LiftingOrder({ athletes, currentAttempt, onDeclareAttemp
                           att.result === 'success'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                             : att.result === 'fail'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                            ? 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300'
                             : 'bg-slate-100 text-slate-800 dark:bg-zinc-700 dark:text-zinc-300'
                         }`}
                       >

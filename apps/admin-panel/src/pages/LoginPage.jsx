@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, Loader2, Moon, Sun, Trophy, Shield } from 'lucide-react';
+import { Lock, Mail, Loader2, Moon, Sun } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,22 +50,41 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl mb-6 shadow-xl shadow-red-600/20">
-            <Trophy size={40} className="text-white" strokeWidth={2.5} />
-          </div>
+          <svg className="w-20 h-20 mx-auto mb-6 text-slate-900 dark:text-white" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <g transform="translate(0,1080) scale(0.1,-0.1)">
+              <path d="M2790 8483 c-28 -10 -66 -37 -102 -73 -97 -98 -88 183 -88 -2699 0 -1395 3 -2546 6 -2559 l6 -22 581 2 581 3 8 32 c4 17 7 1174 6 2570 l-3 2538 -28 58 c-33 67 -96 124 -165 149 -68 25 -732 25 -802 1z"/>
+              <path d="M6030 7776 c-102 -29 -176 -89 -222 -183 -31 -63 -33 -73 -38 -212 l-5 -146 -117 -3 -118 -3 0 -74 0 -75 120 0 120 0 0 -590 0 -590 90 0 90 0 0 590 0 590 215 0 215 0 0 -430 c0 -452 4 -499 46 -580 29 -56 49 -79 96 -114 108 -80 328 -87 468 -16 62 32 65 41 31 108 l-30 59 -62 -31 c-51 -25 -74 -30 -133 -31 -108 0 -166 30 -209 110 -21 39 -22 51 -25 482 l-3 443 203 2 203 3 3 73 3 72 -206 0 -205 0 0 150 0 150 -90 0 -90 0 0 -147 0 -148 -218 0 -217 0 1 120 c0 104 3 127 23 168 43 90 112 123 238 115 52 -4 87 -12 123 -31 l51 -26 24 56 c14 30 25 61 25 69 0 20 -38 42 -109 64 -73 23 -218 26 -291 6z"/>
+              <path d="M5328 7765 c-81 -45 -79 -178 3 -221 130 -67 257 89 160 198 -23 26 -36 32 -82 35 -36 2 -63 -2 -81 -12z"/>
+              <path d="M7160 7767 c-13 -7 -35 -28 -47 -46 -58 -86 7 -191 118 -191 35 0 48 6 80 39 33 33 39 45 39 82 0 49 -25 95 -62 115 -30 17 -96 17 -128 1z"/>
+              <path d="M4100 6790 l0 -890 590 0 590 0 0 80 0 80 -497 2 -498 3 -3 808 -2 807 -90 0 -90 0 0 -890z"/>
+              <path d="M1316 7655 c-81 -31 -146 -94 -176 -173 -20 -53 -20 -65 -18 -1785 l3 -1732 23 -42 c35 -66 79 -110 137 -138 l54 -25 373 0 c370 0 373 0 423 24 52 24 112 82 139 134 35 68 37 144 34 1842 -3 1573 -4 1678 -21 1719 -25 64 -77 122 -138 156 l-54 30 -370 2 c-303 2 -377 -1 -409 -12z"/>
+              <path d="M8065 7221 c-121 -30 -237 -105 -303 -196 l-21 -30 -1 118 0 117 -90 0 -90 0 2 -662 3 -663 87 -3 86 -3 4 403 c4 402 4 403 30 481 65 196 217 297 446 297 204 0 342 -104 381 -288 7 -34 11 -200 11 -472 l0 -420 90 0 90 0 0 434 c0 349 -3 449 -15 508 -41 197 -168 332 -361 382 -83 21 -257 20 -349 -3z"/>
+              <path d="M9415 7230 c-202 -45 -362 -164 -443 -330 -95 -194 -96 -406 -2 -597 128 -261 432 -400 737 -337 141 29 232 78 327 177 l58 62 -5 -150 c-8 -221 -43 -319 -141 -400 -177 -145 -587 -125 -817 40 -27 19 -52 35 -57 35 -9 0 -82 -113 -82 -128 0 -15 71 -67 141 -102 136 -69 283 -100 482 -100 160 0 258 19 360 70 l77 39 0 -770 0 -769 215 0 215 0 0 855 0 855 -141 0 c-116 0 -140 2 -136 14 19 50 48 162 56 221 6 41 11 327 11 693 l0 622 -85 0 -85 0 -1 -127 c0 -122 -1 -127 -16 -103 -30 45 -121 127 -176 158 -102 58 -169 74 -317 78 -74 2 -153 -1 -175 -6z m315 -161 c76 -17 165 -66 224 -124 93 -92 136 -201 136 -345 0 -242 -143 -422 -377 -474 -367 -82 -676 189 -626 549 42 295 318 464 643 394z"/>
+              <path d="M5302 6568 l3 -663 88 -3 87 -3 0 666 0 665 -90 0 -90 0 2 -662z"/>
+              <path d="M7130 6565 l0 -665 90 0 90 0 0 665 0 665 -90 0 -90 0 0 -665z"/>
+              <path d="M335 6111 c-48 -22 -69 -44 -90 -94 -12 -30 -15 -88 -15 -334 0 -267 2 -302 19 -338 22 -50 71 -92 114 -100 18 -3 126 -5 242 -3 l210 3 0 440 0 440 -220 2 c-196 3 -224 1 -260 -16z"/>
+              <path d="M8193 5802 c-112 -40 -163 -108 -163 -217 0 -96 39 -158 127 -204 77 -40 220 -31 293 18 154 103 135 326 -34 396 -61 26 -162 29 -223 7z"/>
+              <path d="M4398 5595 c-350 -59 -544 -279 -507 -575 11 -90 36 -146 90 -205 94 -102 163 -133 464 -210 250 -63 317 -90 340 -135 34 -65 -8 -136 -93 -160 -64 -18 -174 -23 -265 -11 -104 12 -274 67 -361 116 l-61 34 -74 -166 c-83 -188 -84 -170 9 -218 171 -87 410 -132 649 -122 156 6 250 26 355 75 177 84 278 217 301 398 13 101 -25 231 -88 305 -89 103 -205 156 -482 220 -263 60 -336 97 -338 172 -3 106 129 162 331 140 96 -11 242 -53 326 -95 22 -11 42 -16 47 -11 8 8 139 317 139 327 0 7 -162 72 -223 90 -148 43 -403 57 -559 31z"/>
+              <path d="M5868 5229 c-42 -4 -118 -22 -169 -39 -170 -57 -295 -163 -370 -315 -46 -94 -59 -155 -59 -280 0 -126 13 -185 61 -285 132 -271 470 -412 814 -341 211 43 376 168 462 346 147 310 25 688 -272 837 -68 35 -191 68 -286 78 -56 5 -102 9 -103 9 0 -1 -36 -5 -78 -10z m210 -365 c52 -21 97 -68 124 -128 19 -42 23 -68 23 -146 -1 -84 -4 -101 -29 -149 -52 -100 -118 -140 -230 -141 -159 0 -257 111 -257 291 0 85 10 123 45 184 58 98 205 139 324 89z"/>
+              <path d="M7313 5229 c-165 -17 -343 -98 -439 -200 -194 -204 -226 -526 -79 -769 140 -230 470 -355 782 -295 165 32 325 140 392 264 l32 60 -43 22 c-24 12 -99 51 -167 87 l-125 65 -15 -24 c-65 -99 -134 -139 -238 -139 -58 0 -80 5 -124 28 -62 32 -113 93 -130 155 -17 62 -15 174 5 234 20 61 91 133 152 154 117 39 248 -2 313 -98 l35 -52 165 86 c91 47 167 87 169 89 7 5 -38 82 -78 132 -119 149 -355 227 -607 201z"/>
+              <path d="M9120 5230 c-141 -15 -269 -49 -365 -97 -82 -41 -82 -30 -3 -186 38 -78 72 -144 74 -146 1 -2 16 6 32 18 17 11 71 34 122 51 205 67 401 23 434 -97 3 -13 8 -31 11 -41 5 -18 -7 -19 -196 -26 -227 -7 -324 -23 -412 -67 -125 -63 -187 -165 -187 -304 0 -133 55 -236 162 -306 78 -50 140 -69 254 -76 172 -11 285 25 368 118 l46 51 0 -76 0 -76 206 0 206 0 -4 408 c-4 371 -6 413 -25 478 -54 191 -179 306 -386 353 -100 23 -236 32 -337 21z m308 -808 c7 -126 -119 -218 -263 -191 -116 22 -153 145 -64 211 34 26 104 36 224 34 l100 -1 3 -53z"/>
+              <path d="M8077 5214 c-4 -4 -7 -286 -7 -626 l0 -618 220 0 220 0 -2 623 -3 622 -211 3 c-115 1 -213 -1 -217 -4z"/>
+            </g>
+          </svg>
           <h1 className="font-heading text-4xl font-bold text-slate-900 dark:text-white mb-2">
-            Lifting Live Arena
+            Lifting Social
           </h1>
-          <p className="font-ui text-slate-600 dark:text-zinc-400 text-sm">
-            Competition Management System
-          </p>
+         <p className="font-ui text-slate-600 dark:text-zinc-400 text-xl">
+  Competition Management System
+</p>
+
         </div>
 
         {/* Login Card */}
         <div className="card card-lg mb-6">
           <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-200 dark:border-zinc-700">
-            <div className="w-10 h-10 bg-red-100 dark:bg-red-950 rounded-xl flex items-center justify-center">
-              <Shield size={20} className="text-red-600 dark:text-red-400" />
+            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+              <Lock size={20} className="text-slate-900 dark:text-white" />
             </div>
             <div>
               <h2 className="font-heading text-xl font-bold text-slate-900 dark:text-white">Admin Access</h2>
@@ -120,7 +139,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary w-full mt-6 py-3"
+              className="btn w-full mt-6 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -128,45 +147,24 @@ export default function LoginPage() {
                   <span>Signing In...</span>
                 </>
               ) : (
-                <>
-                  <Shield size={20} />
-                  <span>Sign In</span>
-                </>
+                <span>Sign In</span>
               )}
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-zinc-700">
-            <p className="text-xs font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-3">
-              Demo Credentials
-            </p>
-            <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4 space-y-3 text-sm">
-              <div>
-                <p className="font-medium text-slate-700 dark:text-zinc-300 mb-1">Admin Account</p>
-                <p className="text-slate-600 dark:text-zinc-400 font-mono text-xs">admin@test.com</p>
-              </div>
-              <div>
-                <p className="font-medium text-slate-700 dark:text-zinc-300 mb-1">Technical Account</p>
-                <p className="text-slate-600 dark:text-zinc-400 font-mono text-xs">tech@test.com</p>
-              </div>
-              <div>
-                <p className="font-medium text-slate-700 dark:text-zinc-300 mb-1">Password</p>
-                <code className="inline-block bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg text-xs text-slate-900 dark:text-white font-mono">
-                  password123
-                </code>
-              </div>
-            </div>
-          </div>
+         
+          
+          
+         
         </div>
 
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-slate-500 dark:text-zinc-500">
-            🔒 Authorized Officials Only
+            Authorized Officials Only
           </p>
           <p className="text-xs text-slate-400 dark:text-zinc-600 mt-2">
-            © {new Date().getFullYear()} Lifting Live Arena
+            © {new Date().getFullYear()}  Lifting Social. All rights reserved.
           </p>
         </div>
       </div>

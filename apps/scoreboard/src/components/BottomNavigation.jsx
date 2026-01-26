@@ -10,7 +10,7 @@ export default function BottomNavigation() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-black z-20">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-800 border-t border-slate-200 dark:border-zinc-700 z-20">
       <div className="grid grid-cols-4 max-w-7xl mx-auto">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -19,8 +19,8 @@ export default function BottomNavigation() {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center py-4 px-2 transition-all duration-200 font-ui ${
                 isActive
-                  ? 'text-white bg-black'
-                  : 'text-black hover:bg-gray-100'
+                  ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                  : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-700'
               }`
             }
           >

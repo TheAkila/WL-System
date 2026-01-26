@@ -100,7 +100,7 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
     } else {
       return { 
         text: 'NO LIFT', 
-        color: 'text-red-600',
+        color: 'text-slate-600',
         icon: XCircle
       };
     }
@@ -109,13 +109,13 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
   const getLightColor = (decision) => {
     if (decision === null) return 'bg-gray-300 dark:bg-gray-600'; // Off
     if (decision === 'good') return 'bg-white border-2 border-gray-400 shadow-lg'; // White light
-    if (decision === 'no-lift') return 'bg-red-600 shadow-lg shadow-red-500/50'; // Red light
+    if (decision === 'no-lift') return 'bg-slate-600 shadow-lg shadow-slate-500/50'; // Dark light
     return 'bg-gray-300';
   };
 
   const getLightGlow = (decision) => {
     if (decision === 'good') return 'shadow-2xl shadow-white/80';
-    if (decision === 'no-lift') return 'shadow-2xl shadow-red-500/80';
+    if (decision === 'no-lift') return 'shadow-2xl shadow-slate-500/80';
     return '';
   };
 
@@ -155,7 +155,7 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
         <button
           onClick={() => handleQuickDecision('no-lift')}
           disabled={isSubmitting || decisions.left !== null}
-          className="flex items-center justify-center gap-2 px-6 py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+          className="flex items-center justify-center gap-2 px-6 py-4 bg-slate-600 hover:bg-slate-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
         >
           <XCircle size={24} />
           <span>ALL NO LIFT</span>
@@ -196,7 +196,7 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
             <button
               onClick={() => handleIndividualDecision('left', 'no-lift')}
               disabled={isSubmitting || decisions.left !== null}
-              className="px-3 py-2 bg-white hover:bg-red-50 border-2 border-red-600 text-red-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-2 bg-white hover:bg-slate-50 border-2 border-slate-600 text-slate-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               NO LIFT
             </button>
@@ -226,7 +226,7 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
             <button
               onClick={() => handleIndividualDecision('center', 'no-lift')}
               disabled={isSubmitting || decisions.center !== null}
-              className="px-3 py-2 bg-white hover:bg-red-50 border-2 border-red-600 text-red-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-2 bg-white hover:bg-slate-50 border-2 border-slate-600 text-slate-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               NO LIFT
             </button>
@@ -256,7 +256,7 @@ export default function RefereeDecisionPanel({ attempt, onDecisionRecorded }) {
             <button
               onClick={() => handleIndividualDecision('right', 'no-lift')}
               disabled={isSubmitting || decisions.right !== null}
-              className="px-3 py-2 bg-white hover:bg-red-50 border-2 border-red-600 text-red-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-2 bg-white hover:bg-slate-50 border-2 border-slate-600 text-slate-600 rounded font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               NO LIFT
             </button>

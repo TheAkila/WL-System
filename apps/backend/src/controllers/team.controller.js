@@ -60,7 +60,7 @@ export const getTeam = async (req, res, next) => {
  */
 export const createTeam = async (req, res, next) => {
   try {
-    const { name, country } = req.body;
+    const { name, country, manager_phone } = req.body;
 
     if (!name || !country) {
       throw new AppError('Name and country are required', 400);
@@ -68,7 +68,7 @@ export const createTeam = async (req, res, next) => {
 
     const { data, error } = await db.supabase
       .from('teams')
-      .insert([{ name, country }])
+      .insert([{ name, country, manager_phone: manager_phone || null }])
       .select()
       .single();
 
@@ -94,12 +94,13 @@ export const createTeam = async (req, res, next) => {
 export const updateTeam = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, country, logo_url } = req.body;
+    const { name, country, logo_url, manager_phone } = req.body;
 
     const updates = {};
     if (name) updates.name = name;
     if (country) updates.country = country;
     if (logo_url !== undefined) updates.logo_url = logo_url; // Allow null to clear logo
+    if (manager_phone !== undefined) updates.manager_phone = manager_phone || null;
 
     const { data, error } = await db.supabase
       .from('teams')
