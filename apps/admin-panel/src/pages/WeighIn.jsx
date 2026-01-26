@@ -32,15 +32,19 @@ export default function WeighIn() {
   const fetchAthletes = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/athletes', {
-        params: { 
-          gender: selectedSession.gender,
-          weightCategory: selectedSession.weight_category
-        }
-      });
-      setAthletes(response.data.data || []);
+      // Use session endpoint to get all athletes in this session
+      // This properly supports both single-class and multi-class sessions
+      const response = await api.get(`/sessions/${selectedSession.id}/athletes`);
+      
+      if (response.data.success) {
+        setAthletes(response.data.athletes || []);
+      } else {
+        setAthletes([]);
+        toast.error('Failed to load athletes');
+      }
     } catch (error) {
       toast.error('Failed to load athletes');
+      console.error('Error fetching athletes:', error);
     } finally {
       setLoading(false);
     }
@@ -143,13 +147,7 @@ export default function WeighIn() {
         </p>
       </div>
 
-      {/* Important Notice */}
-      <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800">
-        <p className="text-red-800 dark:text-red-300 font-medium flex items-center gap-2">
-          <X size={20} className="flex-shrink-0" />
-          <span><strong>IWF Rule:</strong> Athletes who exceed their weight category limits during weigh-in will be automatically disqualified from the competition.</span>
-        </p>
-      </div>
+      
 
       {!selectedSession ? (
         <div className="card card-lg">
@@ -170,7 +168,11 @@ export default function WeighIn() {
                   {session.name}
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-zinc-400">
-                  {session.gender === 'male' ? 'Men' : 'Women'} • {session.weight_category}kg
+                  {session.gender === 'male' ? 'Men' : 'Women'} • {
+                    session.weight_classes && session.weight_classes.length > 0
+                      ? session.weight_classes.map(wc => `${wc}kg`).join(' / ')
+                      : `${session.weight_category}kg`
+                  }
                 </p>
               </button>
             ))}
@@ -184,7 +186,11 @@ export default function WeighIn() {
                 {selectedSession.name}
               </h3>
               <p className="text-sm text-slate-600 dark:text-zinc-400">
-                {selectedSession.gender === 'male' ? 'Men' : 'Women'} • {selectedSession.weight_category}kg
+                {selectedSession.gender === 'male' ? 'Men' : 'Women'} • {
+                  selectedSession.weight_classes && selectedSession.weight_classes.length > 0
+                    ? selectedSession.weight_classes.map(wc => `${wc}kg`).join(' / ')
+                    : `${selectedSession.weight_category}kg`
+                }
               </p>
             </div>
             <div className="flex gap-3">

@@ -9,6 +9,7 @@ import {
   startSession,
   endSession,
   clearSessionAttempts,
+  getSessionAthletes,
 } from '../controllers/session.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -17,6 +18,7 @@ const router = express.Router();
 
 router.get('/', getSessions);
 router.get('/:id', getSession);
+router.get('/:id/athletes', getSessionAthletes);
 
 router.post(
   '/',

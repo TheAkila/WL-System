@@ -58,6 +58,16 @@ export const createSession = async (req, res, next) => {
     // Auto-assign competition_id if not provided (single competition system)
     let sessionData = { ...req.body };
     
+    // Ensure weight_classes is an array
+    if (sessionData.weight_classes && !Array.isArray(sessionData.weight_classes)) {
+      sessionData.weight_classes = [sessionData.weight_classes];
+    }
+    
+    // If no weight_classes provided, use weight_category as fallback
+    if (!sessionData.weight_classes || sessionData.weight_classes.length === 0) {
+      sessionData.weight_classes = [sessionData.weight_category];
+    }
+    
     if (!sessionData.competition_id) {
       // Get the current active competition
       const { data: competition } = await supabase
@@ -242,3 +252,59 @@ export const clearSessionAttempts = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getSessionAthletes = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('📋 getSessionAthletes called:', { sessionId: id });
+
+    // Get session details to see weight classes
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('sessions')
+      .select('name, weight_classes, weight_category')
+      .eq('id', id)
+      .single();
+
+    if (sessionError) {
+      console.error('❌ Error fetching session:', sessionError);
+    } else {
+      console.log('📌 Session details:', {
+        sessionId: id,
+        sessionName: sessionData?.name,
+        weight_classes: sessionData?.weight_classes,
+        weight_category: sessionData?.weight_category
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('athletes')
+      .select('*, team:teams(*)')
+      .eq('session_id', id)
+      .order('weight_category', { ascending: true })
+      .order('start_number', { ascending: true });
+
+    if (error) {
+      console.error('❌ Error fetching session athletes:', error);
+      throw new AppError(error.message, 400);
+    }
+
+    console.log('✅ Session athletes fetched:', {
+      sessionId: id,
+      count: data?.length || 0,
+      groupedByClass: data?.reduce((acc, a) => {
+        if (!acc[a.weight_category]) acc[a.weight_category] = 0;
+        acc[a.weight_category]++;
+        return acc;
+      }, {})
+    });
+
+    res.status(200).json({
+      success: true,
+      athletes: data || [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -137,6 +137,34 @@ export default function Athletes() {
     setShowForm(true);
   };
 
+  // Get available weight classes based on selected session
+  const getAvailableWeightClasses = () => {
+    if (!formData.session_id) {
+      // If no session selected, show all classes for current gender
+      return formData.gender === 'female'
+        ? ['48', '53', '58', '63', '69', '77', '86', '86+']
+        : ['60', '65', '71', '79', '88', '94', '110', '110+'];
+    }
+
+    // Get the selected session
+    const selectedSession = sessions.find(s => s.id === formData.session_id);
+    
+    if (!selectedSession) {
+      return formData.gender === 'female'
+        ? ['48', '53', '58', '63', '69', '77', '86', '86+']
+        : ['60', '65', '71', '79', '88', '94', '110', '110+'];
+    }
+
+    // If session has weight_classes array, use those
+    if (selectedSession.weight_classes && Array.isArray(selectedSession.weight_classes) && selectedSession.weight_classes.length > 0) {
+      console.log('🔍 Session weight classes:', selectedSession.weight_classes);
+      return selectedSession.weight_classes.sort();
+    }
+
+    // Fallback to session's weight_category
+    return [selectedSession.weight_category];
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure?')) {
       try {
@@ -229,33 +257,20 @@ export default function Athletes() {
                 required
               >
                 <option value="">Select Weight Class</option>
-                {formData.gender === 'male' ? (
-                  <>
-                    <option value="60">60kg</option>
-                    <option value="65">65kg</option>
-                    <option value="71">71kg</option>
-                    <option value="79">79kg</option>
-                    <option value="88">88kg</option>
-                    <option value="94">94kg</option>
-                    <option value="110">110kg</option>
-                    <option value="110+">110kg+</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="48">48kg</option>
-                    <option value="53">53kg</option>
-                    <option value="58">58kg</option>
-                    <option value="63">63kg</option>
-                    <option value="69">69kg</option>
-                    <option value="77">77kg</option>
-                    <option value="86">86kg</option>
-                    <option value="86+">86kg+</option>
-                  </>
-                )}
+                {getAvailableWeightClasses().map((wc) => (
+                  <option key={wc} value={wc}>{wc}kg</option>
+                ))}
               </select>
+              
               <select
                 value={formData.session_id}
-                onChange={(e) => setFormData({ ...formData, session_id: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ 
+                    ...formData, 
+                    session_id: e.target.value,
+                    weight_category: '' // Reset weight category when session changes
+                  });
+                }}
                 className="input"
               >
                 <option value="">Select Session</option>

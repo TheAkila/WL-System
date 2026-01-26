@@ -277,7 +277,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
 
   return (
     <div 
-      className={`h-[52px] p-2 cursor-pointer transition-colors border-2 border-transparent flex flex-col items-center justify-center ${getCellStyle()}`}
+      className={`w-full h-full cursor-pointer transition-colors flex items-center justify-center overflow-hidden ${getCellStyle()}`}
       onClick={handleCellClick}
     >
       {isEditing ? (

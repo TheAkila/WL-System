@@ -24,6 +24,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
   const [timerKey, setTimerKey] = useState(0); // Force timer reset
   const [forceEditMode, setForceEditMode] = useState(false); // Force edit mode to bypass restrictions
   const [showWeighInModal, setShowWeighInModal] = useState(false); // Phase 2: Weigh-in modal state
+  const [selectedWeightClass, setSelectedWeightClass] = useState(null); // Multi-class: selected weight class
+  const [availableWeightClasses, setAvailableWeightClasses] = useState([]); // Multi-class: all weight classes in session
 
   const sessionId = session?.id;
 
@@ -64,20 +66,30 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     const activeAthletes = withResults.filter(a => !a.is_dq);
     const dqAthletes = withResults.filter(a => a.is_dq);
     
-    // Calculate ranks without changing active athlete order
-    // Separate DQ and active athletes to calculate ranks
-    const rankedList = activeAthletes
-      .slice()
-      .sort((a, b) => {
+    // Group active athletes by weight class for separate ranking
+    const athletesByClass = {};
+    activeAthletes.forEach(athlete => {
+      const wc = athlete.weight_category;
+      if (!athletesByClass[wc]) {
+        athletesByClass[wc] = [];
+      }
+      athletesByClass[wc].push(athlete);
+    });
+
+    // Create rank map with per-class rankings
+    const rankMap = {};
+    Object.keys(athletesByClass).forEach(weightClass => {
+      // Sort athletes within this weight class
+      const classAthletes = athletesByClass[weightClass].slice().sort((a, b) => {
         if (a.total !== b.total) return b.total - a.total;
         if (a.bodyweight !== b.bodyweight) return a.bodyweight - b.bodyweight;
         return (a.start_number || 0) - (b.start_number || 0);
       });
-
-    // Create rank map for active athletes
-    const rankMap = {};
-    rankedList.forEach((athlete, index) => {
-      rankMap[athlete.id] = athlete.total > 0 ? index + 1 : null;
+      
+      // Assign ranks within this class
+      classAthletes.forEach((athlete, index) => {
+        rankMap[athlete.id] = athlete.total > 0 ? index + 1 : null;
+      });
     });
 
     // Return active athletes in original order with calculated ranks, then DQ athletes at bottom
@@ -286,6 +298,12 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       });
       
       console.log('📊 Athletes loaded:', transformedAthletes.length);
+      
+      // Extract available weight classes from athletes (for reference only, not for filtering)
+      const uniqueWeightClasses = [...new Set(transformedAthletes.map(a => a.weight_category))].sort();
+      setAvailableWeightClasses(uniqueWeightClasses);
+      
+      // Don't filter by weight class - show all classes in one sheet
       
       const withCalculations = calculateRankings(transformedAthletes);
       setAthletes(withCalculations);
@@ -545,10 +563,30 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     toast.success('Weigh-in completed');
   };
 
+  // Group athletes by weight class in ascending order
+  const getAthletesGroupedByClass = () => {
+    const grouped = {};
+    athletes.forEach(athlete => {
+      const wc = athlete.weight_category;
+      if (!grouped[wc]) {
+        grouped[wc] = [];
+      }
+      grouped[wc].push(athlete);
+    });
+    
+    // Sort weight classes numerically (ascending)
+    const sortedClasses = Object.keys(grouped)
+      .map(wc => ({ wc, num: parseInt(wc) }))
+      .sort((a, b) => a.num - b.num)
+      .map(item => item.wc);
+    
+    return { grouped, sortedClasses };
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-zinc-900 p-4">
+    <div className="min-h-screen bg-slate-100 dark:bg-zinc-900 p-2">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-4 mb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -685,11 +723,18 @@ export default function SessionSheet({ session: initialSession, onBack }) {
       )}
 
       {/* Spreadsheet Sheet */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
-            Competition Sheet
-          </h2>
+      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-3">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+              Competition Sheet
+            </h2>
+            {availableWeightClasses.length > 1 && (
+              <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1">
+                Weight Classes: {availableWeightClasses.map(wc => `${wc}kg`).join(' / ')}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Loading/Error States */}
@@ -708,8 +753,8 @@ export default function SessionSheet({ session: initialSession, onBack }) {
 
         {/* Spreadsheet Table */}
         {!loading && !error && (
-          <div className="overflow-x-auto rounded-lg border-2 border-slate-300 dark:border-zinc-700">
-            <table className="w-full border-collapse bg-white dark:bg-zinc-900 table-fixed">
+          <div className="overflow-hidden">
+            <table className="w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600\">
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '150px' }} />
@@ -727,133 +772,168 @@ export default function SessionSheet({ session: initialSession, onBack }) {
                 <col style={{ width: '60px' }} />
               </colgroup>
               <thead>
-                <tr className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-zinc-800 dark:to-zinc-700 h-[52px]">
-                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
+                <tr className="bg-gray-200 dark:bg-gray-800 h-[52px]">
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     No
                   </th>
-                  <th rowSpan="2" className="p-2 text-left text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
+                  <th rowSpan="2" className="p-3 text-left text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     Name
                   </th>
-                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     Team
                   </th>
-                  <th colSpan="4" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/20">
+                  <th colSpan="4" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     SNATCH
                   </th>
-                  <th colSpan="4" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/20">
+                  <th colSpan="4" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     CLEAN & JERK
                   </th>
-                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 bg-amber-50 dark:bg-amber-900/20">
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     TOTAL
                   </th>
-                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-r-2 border-b-2 border-slate-400 dark:border-zinc-600">
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     RANK
                   </th>
-                  <th rowSpan="2" className="p-2 text-center text-sm font-bold text-slate-800 dark:text-white border-b-2 border-slate-400 dark:border-zinc-600">
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     DQ
                   </th>
                 </tr>
-                <tr className="bg-gradient-to-r from-slate-50 to-white dark:from-zinc-700 dark:to-zinc-800 h-[40px]">
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">1</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">2</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-50 dark:bg-blue-900/10">3</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 bg-blue-100 dark:bg-blue-900/30">Best</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/10">1</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/10">2</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r border-b-2 border-slate-400 dark:border-zinc-600 bg-purple-50 dark:bg-purple-900/10">3</th>
-                  <th className="p-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 border-r-2 border-b-2 border-slate-400 dark:border-zinc-600 bg-purple-100 dark:bg-purple-900/30">Best</th>
+                <tr className="bg-gray-200 dark:bg-gray-800 h-[40px]">
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">1</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">2</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">3</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Best</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">1</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">2</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">3</th>
+                  <th className="p-2 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Best</th>
                 </tr>
               </thead>
               <tbody>
-                {athletes.map((athlete, index) => {
-                  return (
-                    <tr 
-                      key={athlete.id} 
-                      className="transition-all duration-300 h-[52px] hover:bg-slate-50 dark:hover:bg-zinc-800/50"
-                    >
-                    <td className="p-2 text-sm font-bold text-center text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/30">
-                      {index + 1}
-                    </td>
-                    <td className="p-2 text-sm font-semibold text-slate-800 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 truncate">
-                      {athlete.name}
-                    </td>
-                    <td className="p-2 text-xs text-center text-slate-600 dark:text-zinc-400 border-r-2 border-b border-slate-300 dark:border-zinc-700 truncate">
-                      {athlete.teams?.country || athlete.country || '-'}
-                    </td>
-                    
-                    {/* Snatch Attempts */}
-                    {[1, 2, 3].map(attemptNum => (
-                      <td key={`snatch-${attemptNum}`} className="border-r border-b border-slate-300 dark:border-zinc-700 p-0 h-[52px]">
-                        <AttemptCell
-                          athlete={athlete}
-                          attemptType="snatch"
-                          attemptNumber={attemptNum}
-                          onUpdate={handleAttemptUpdate}
-                          previousAttempts={athlete.attempts || []}
-                          forceEditMode={forceEditMode}
-                          isDQ={athlete.is_dq}
-                          nextLifter={nextLifter}
-                        />
-                      </td>
-                    ))}
+                {(() => {
+                  const { grouped, sortedClasses } = getAthletesGroupedByClass();
+                  let globalIndex = 0;
+                  
+                  return sortedClasses.map(weightClass => (
+                    <div key={weightClass} className="contents">
+                      {/* Weight Class Section Header - Clean Design */}
+                      <tr className="h-11 bg-gray-300 dark:bg-gray-700 border-2 border-gray-400 dark:border-gray-600">
+                        <td colSpan="14" className="p-3 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
+                          {weightClass}kg Weight Class 
+                        </td>
+                      </tr>
+                      
+                      {/* Athletes in this weight class */}
+                      {grouped[weightClass].map((athlete, classIndex) => {
+                        globalIndex++;
+                        const isEvenRow = classIndex % 2 === 0;
+                        return (
+                          <tr 
+                            key={athlete.id} 
+                            className="h-[52px] bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden"
+                          >
+                            <td className="p-2 text-sm font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              {globalIndex}
+                            </td>
+                            <td className="p-2 text-sm font-semibold text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              <span className="truncate block">{athlete.name}</span>
+                            
+                            </td>
+                            <td className="p-2 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              {athlete.teams?.country || athlete.country || '-'}
+                            </td>
+                            
+                            {/* Snatch Attempts */}
+                            {[1, 2, 3].map(attemptNum => (
+                              <td key={`snatch-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
+                                <div className="absolute inset-0 overflow-hidden">
+                                  <AttemptCell
+                                    athlete={athlete}
+                                    attemptType="snatch"
+                                    attemptNumber={attemptNum}
+                                    onUpdate={handleAttemptUpdate}
+                                    previousAttempts={athlete.attempts || []}
+                                    forceEditMode={forceEditMode}
+                                    isDQ={athlete.is_dq}
+                                    nextLifter={nextLifter}
+                                  />
+                                </div>
+                              </td>
+                            ))}
 
-                    {/* Best Snatch */}
-                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
-                      {athlete.bestSnatch > 0 ? athlete.bestSnatch : '-'}
-                    </td>
+                            {/* Best Snatch */}
+                            <td className="p-2 text-base font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
+                              {athlete.bestSnatch > 0 ? athlete.bestSnatch : '-'}
+                            </td>
 
-                    {/* Clean & Jerk Attempts */}
-                    {[1, 2, 3].map(attemptNum => (
-                      <td key={`clean_and_jerk-${attemptNum}`} className="border-r border-b border-slate-300 dark:border-zinc-700 p-0 h-[52px]">
-                        <AttemptCell
-                          athlete={athlete}
-                          attemptType="clean_and_jerk"
-                          attemptNumber={attemptNum}
-                          onUpdate={handleAttemptUpdate}
-                          previousAttempts={athlete.attempts || []}
-                          forceEditMode={forceEditMode}
-                          isDQ={athlete.is_dq}
-                          nextLifter={nextLifter}
-                        />
-                      </td>
-                    ))}
+                            {/* Clean & Jerk Attempts */}
+                            {[1, 2, 3].map(attemptNum => (
+                              <td key={`clean_and_jerk-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
+                                <div className="absolute inset-0 overflow-hidden">
+                                  <AttemptCell
+                                    athlete={athlete}
+                                    attemptType="clean_and_jerk"
+                                    attemptNumber={attemptNum}
+                                    onUpdate={handleAttemptUpdate}
+                                    previousAttempts={athlete.attempts || []}
+                                    forceEditMode={forceEditMode}
+                                    isDQ={athlete.is_dq}
+                                    nextLifter={nextLifter}
+                                  />
+                                </div>
+                              </td>
+                            ))}
 
-                    {/* Best C&J */}
-                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-green-100 dark:bg-green-900/30">
-                      {athlete.bestCleanJerk > 0 ? athlete.bestCleanJerk : '-'}
-                    </td>
+                            {/* Best C&J */}
+                            <td className="border-2 border-r border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
+                              <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                                <span className="text-base font-bold text-black dark:text-white">
+                                  {athlete.bestCleanJerk > 0 ? athlete.bestCleanJerk : '-'}
+                                </span>
+                              </div>
+                            </td>
 
-                    {/* Total */}
-                    <td className="p-2 text-sm font-bold text-center text-slate-900 dark:text-white border-r-2 border-b border-slate-300 dark:border-zinc-700 bg-amber-100 dark:bg-amber-900/30">
-                      {athlete.total > 0 ? athlete.total : '-'}
-                    </td>
+                            {/* Total */}
+                            <td className="p-2 text-base font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
+                              {athlete.total > 0 ? athlete.total : '-'}
+                            </td>
 
-                    {/* Rank */}
-                    <td className="p-2 text-sm font-bold text-center border-r-2 border-b border-slate-300 dark:border-zinc-700">
-                      {athlete.rank ? (
-                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs ${
-                          athlete.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
-                          athlete.rank === 2 ? 'bg-gray-300 text-gray-900' :
-                          athlete.rank === 3 ? 'bg-orange-400 text-orange-900' :
-                          'bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-white'
-                        }`}>
-                          {athlete.rank}
-                        </span>
-                      ) : '-'}
-                    </td>
+                            {/* Rank */}
+                            <td className="p-2 text-base font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              {athlete.rank ? (
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs bg-gray-200 dark:bg-gray-700 text-black dark:text-white font-bold">
+                                  {athlete.rank}
+                                </span>
+                              ) : '-'}
+                            </td>
 
-                    {/* DQ */}
-                    <td className="p-2 text-center border-b border-slate-300 dark:border-zinc-700">
-                      <input
-                        type="checkbox"
-                        checked={athlete.is_dq || false}
-                        onChange={(e) => handleDQToggle(athlete.id, e.target.checked)}
-                        className="w-5 h-5 cursor-pointer accent-red-600"
-                      />
-                    </td>
-                  </tr>
-                  );
-                })}
+                            {/* DQ */}
+                            <td className="border-2 border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
+                              <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked={athlete.is_dq || false}
+                                  onChange={(e) => {
+                                    const newAthletes = athletes.map(a =>
+                                      a.id === athlete.id ? { ...a, is_dq: e.target.checked } : a
+                                    );
+                                    setAthletes(newAthletes);
+                                    fetch(`/api/athletes/${athlete.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ is_dq: e.target.checked })
+                                    });
+                                  }}
+                                  className="w-5 h-5 cursor-pointer accent-gray-400"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </div>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>

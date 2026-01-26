@@ -20,6 +20,7 @@ export default function Sessions() {
     gender: 'male',
     status: 'scheduled',
     current_lift: 'snatch',
+    weight_classes: [], // Multi-class: selected weight classes
   });
   const [editingId, setEditingId] = useState(null);
 
@@ -55,15 +56,23 @@ export default function Sessions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate that at least one weight class is selected
+    if (!formData.weight_classes || formData.weight_classes.length === 0) {
+      toast.error('Please select at least one weight class');
+      return;
+    }
+    
     try {
       setSubmitting(true);
       // Only send editable fields to backend
       const dataToSubmit = {
         name: formData.name,
-        weight_category: formData.weight_category,
+        weight_category: formData.weight_classes[0], // Use first selected class as default
         gender: formData.gender,
         status: formData.status,
         current_lift: editingId ? formData.current_lift : 'snatch',
+        weight_classes: formData.weight_classes,
       };
       
       console.log('📝 Submitting session form:', { isEdit: !!editingId, data: dataToSubmit });
@@ -78,7 +87,7 @@ export default function Sessions() {
         console.log('➕ Creating new session');
         await api.post('/sessions', dataToSubmit);
         console.log('✅ Session created successfully');
-        toast.success('Session created (includes Snatch & Clean & Jerk)');
+        toast.success(`Session created with ${dataToSubmit.weight_classes.length} weight class(es)`);
       }
       resetForm();
       setShowForm(false);
@@ -99,6 +108,7 @@ export default function Sessions() {
       gender: 'male',
       status: 'scheduled',
       current_lift: 'snatch',
+      weight_classes: [],
     });
     setEditingId(null);
   };
@@ -111,9 +121,29 @@ export default function Sessions() {
       gender: session.gender,
       status: session.status,
       current_lift: session.current_lift,
+      weight_classes: session.weight_classes && session.weight_classes.length > 0 
+        ? session.weight_classes 
+        : [session.weight_category],
     });
     setEditingId(session.id);
     setShowForm(true);
+  };
+
+  // Get available weight classes based on gender
+  const getWeightClasses = () => {
+    return formData.gender === 'female'
+      ? ['48', '53', '58', '63', '69', '77', '86', '86+']
+      : ['60', '65', '71', '79', '88', '94', '110', '110+'];
+  };
+
+  // Handle weight class checkbox change
+  const handleWeightClassToggle = (weightClass) => {
+    setFormData(prev => ({
+      ...prev,
+      weight_classes: prev.weight_classes.includes(weightClass)
+        ? prev.weight_classes.filter(w => w !== weightClass)
+        : [...prev.weight_classes, weightClass]
+    }));
   };
 
   const handleDelete = async (id) => {
@@ -210,37 +240,7 @@ export default function Sessions() {
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
-              <select
-                value={formData.weight_category}
-                onChange={(e) => setFormData({ ...formData, weight_category: e.target.value })}
-                className="input"
-                required
-              >
-                <option value="">Select Weight Class</option>
-                {formData.gender === 'female' ? (
-                  <>
-                    <option value="48">48kg</option>
-                    <option value="53">53kg</option>
-                    <option value="58">58kg</option>
-                    <option value="63">63kg</option>
-                    <option value="69">69kg</option>
-                    <option value="77">77kg</option>
-                    <option value="86">86kg</option>
-                    <option value="86+">86kg+</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="60">60kg</option>
-                    <option value="65">65kg</option>
-                    <option value="71">71kg</option>
-                    <option value="79">79kg</option>
-                    <option value="88">88kg</option>
-                    <option value="94">94kg</option>
-                    <option value="110">110kg</option>
-                    <option value="110+">110kg+</option>
-                  </>
-                )}
-              </select>
+
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -261,6 +261,37 @@ export default function Sessions() {
                 </select>
               )}
             </div>
+
+            {/* Weight Classes Selection */}
+            <div className="mt-6">
+              <label className="block text-sm font-bold text-slate-800 dark:text-white mb-3">
+                Weight Classes for This Session
+              </label>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                {getWeightClasses().map(weightClass => (
+                  <label key={weightClass} className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 p-2 rounded transition">
+                    <input
+                      type="checkbox"
+                      checked={formData.weight_classes.includes(weightClass)}
+                      onChange={() => handleWeightClassToggle(weightClass)}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {weightClass}kg
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {formData.weight_classes.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Selected Classes: <span className="font-bold text-blue-600 dark:text-blue-400">{formData.weight_classes.join(', ')}kg</span> ({formData.weight_classes.length} class{formData.weight_classes.length !== 1 ? 'es' : ''})
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-4">
               <button type="submit" disabled={submitting} className="btn btn-primary flex-1 disabled:opacity-50">
                 {submitting ? 'Creating...' : editingId ? 'Update' : 'Create'} Session
@@ -323,10 +354,20 @@ export default function Sessions() {
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Weight Category:</span>
-                      <span className="font-bold ml-2">{session.weight_category}kg</span>
+                      <span className="text-gray-600">Weight Classes:</span>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {session.weight_classes && session.weight_classes.length > 0 ? (
+                          session.weight_classes.map(wc => (
+                            <span key={wc} className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold text-xs">
+                              {wc}kg
+                            </span>
+                          ))
+                        ) : (
+                          <span className="font-bold text-gray-700">{session.weight_category}kg</span>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <span className="text-gray-600">Gender:</span>
