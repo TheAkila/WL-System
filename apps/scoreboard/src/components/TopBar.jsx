@@ -1,7 +1,26 @@
 import ScrollingBanner from './ScrollingBanner';
 import { Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import api from '../services/api';
 
 export default function TopBar({ darkMode, setDarkMode }) {
+  const [competitionName, setCompetitionName] = useState('National Championship 2025');
+
+  useEffect(() => {
+    const fetchCompetition = async () => {
+      try {
+        const response = await api.get('/competitions/current');
+        if (response.data?.data?.name) {
+          setCompetitionName(response.data.data.name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch competition name:', error);
+      }
+    };
+
+    fetchCompetition();
+  }, []);
+
   const handleToggleDarkMode = () => {
     console.log('Button clicked!');
     console.log('Current darkMode state:', darkMode);
@@ -20,7 +39,7 @@ export default function TopBar({ darkMode, setDarkMode }) {
         <div className="px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-heading text-2xl font-black tracking-tight">National Championship 2025</h1>
+              <h1 className="font-heading text-2xl font-black tracking-tight">{competitionName}</h1>
               <p className="font-ui text-xs text-black mt-1 font-medium tracking-wider uppercase">Lifting Social</p>
             </div>
             <div className="flex items-center gap-3">
