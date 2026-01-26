@@ -59,6 +59,21 @@ export const useRealtimeUpdates = (sessionId) => {
       setCurrentAttempt(attempt);
     });
 
+    socketService.on('attempt:updated', (attempt) => {
+      console.log('📥 Attempt updated:', attempt);
+      setCurrentAttempt(prev => {
+        // If we are currently showing this attempt, update it
+        if (prev && prev.id === attempt.id) {
+          return attempt;
+        }
+        // If we aren't showing anything and this attempt is pending, show it
+        if (!prev && attempt.result === 'pending') {
+          return attempt;
+        }
+        return prev;
+      });
+    });
+
     socketService.on('attempt:validated', (attempt) => {
       console.log('📥 Attempt validated:', attempt);
       setCurrentAttempt(attempt);

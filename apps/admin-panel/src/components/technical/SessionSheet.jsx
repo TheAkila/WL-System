@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Printer, Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock } from 'lucide-react';
+import { Printer, Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock, Monitor } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import AttemptCell from './AttemptCell';
@@ -456,6 +456,21 @@ export default function SessionSheet({ session: initialSession, onBack }) {
     }
   }, [sessionId]);
 
+  const handleActivateDisplay = () => {
+    try {
+      if (socketService) {
+        // Emit explicit switch event
+        socketService.emit('display:switch', { sessionId: session.id });
+        toast.success('Display screen activated for this session');
+      } else {
+        toast.error('Socket service not available');
+      }
+    } catch (error) {
+      console.error('Failed to activate display:', error);
+      toast.error('Failed to activate display');
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -626,6 +641,14 @@ export default function SessionSheet({ session: initialSession, onBack }) {
               compact={true}
               className="flex gap-2"
             />
+            <button
+              onClick={handleActivateDisplay}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              title="Push this session to the main display screen"
+            >
+              <Monitor size={16} />
+              Display
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"

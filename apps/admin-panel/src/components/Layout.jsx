@@ -54,9 +54,7 @@ export default function Layout() {
         <div className="flex items-center justify-between py-4 px-8">
           {/* Left: Logo and Title */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-white font-heading font-bold">
-              LLA
-            </div>
+            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="w-16 h-16" />
             <div>
               <h1 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Lifting Live Arena</h1>
               <p className="text-xs text-slate-500 dark:text-zinc-400 font-ui">Powered by LiftingSocial</p>
