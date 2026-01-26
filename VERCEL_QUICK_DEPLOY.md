@@ -12,16 +12,25 @@
 1. Go to [vercel.com/new](https://vercel.com/new)
 2. Import `TheAkila/WL-System` from GitHub
 3. **Configure:**
+   - Project Name: `wl-system-backend` (⚠️ Must start with letter, only letters/digits/underscores)
    - Root Directory: `apps/backend`
    - Framework: Other
 4. **Add Environment Variables:**
-   ```
-   NODE_ENV=production
-   SUPABASE_URL=https://axhbgtkdvghjxtrcvbkc.supabase.co
-   SUPABASE_KEY=<your-service-role-key>
-   PORT=5000
-   ```
-5. Deploy → **Copy the URL** (e.g., `https://wl-backend-xyz.vercel.app`)
+   - Scroll down to find "Environment Variables" section
+   - Click "Add" or the input fields
+   - Add each variable one by one:
+     ```
+     Key: NODE_ENV          Value: production
+     Key: SUPABASE_URL      Value: https://axhbgtkdvghjxtrcvbkc.supabase.co
+     Key: SUPABASE_KEY      Value: <paste your service role key>
+     Key: PORT              Value: 5000
+     ```
+   - **Where to get SUPABASE_KEY:**
+     1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+     2. Select your project
+     3. Click Settings (gear icon) → API
+     4. Copy the `service_role` key (⚠️ Keep this secret!)
+5. Deploy → **Copy the URL** (e.g., `https://wl-system-backend.vercel.app`)
 
 ---
 
@@ -31,30 +40,35 @@ Do this 3 times (Admin, Display, Scoreboard):
 
 #### A. Admin Panel
 1. New Project → Import same repo
-2. Root Directory: `apps/admin-panel`
-3. Framework: Vite
-4. Environment Variables:
+2. **Project Name:** `wl-system-admin` (start with letter, no spaces)
+3. Root Directory: `apps/admin-panel`
+4. Framework: Vite
+5. **Add Environment Variables** (in Environment Variables section):
    ```
-   VITE_API_URL=https://YOUR-BACKEND-URL.vercel.app/api
-   VITE_SOCKET_URL=https://YOUR-BACKEND-URL.vercel.app
-   VITE_SUPABASE_URL=https://axhbgtkdvghjxtrcvbkc.supabase.co
-   VITE_SUPABASE_ANON_KEY=<your-anon-key>
+   Key: VITE_API_URL          Value: https://wl-system-backend.vercel.app/api
+   Key: VITE_SOCKET_URL       Value: https://wl-system-backend.vercel.app
+   Key: VITE_SUPABASE_URL     Value: https://axhbgtkdvghjxtrcvbkc.supabase.co
+   Key: VITE_SUPABASE_ANON_KEY Value: <paste anon key from Supabase>
    ```
-5. Deploy
+   - Replace `wl-system-backend` with your actual backend URL from Step 1
+   - **Get ANON_KEY:** Supabase Dashboard → Settings → API → `anon` key (public, safe to use)
+6. Deploy
 
 #### B. Display Screen
 1. New Project → Import same repo
-2. Root Directory: `apps/display-screen`
-3. Framework: Vite
-4. Same environment variables as Admin
-5. Deploy
+2. **Project Name:** `wl-system-display`
+3. Root Directory: `apps/display-screen`
+4. Framework: Vite
+5. Same environment variables as Admin
+6. Deploy
 
 #### C. Scoreboard
 1. New Project → Import same repo
-2. Root Directory: `apps/scoreboard`
-3. Framework: Vite
-4. Same environment variables as Admin
-5. Deploy
+2. **Project Name:** `wl-system-scoreboard`
+3. Root Directory: `apps/scoreboard`
+4. Framework: Vite
+5. Same environment variables as Admin
+6. Deploy
 
 ---
 
