@@ -56,7 +56,6 @@ export const useRealtimeUpdates = (sessionId) => {
       }));
     });
 
-    timer,
     socketService.on('timer:paused', (timerData) => {
       setTimer(prev => ({ 
         ...prev,
@@ -102,5 +101,6 @@ export const useRealtimeUpdates = (sessionId) => {
     currentAttempt,
     leaderboard,
     session,
+    timer,
   };
 };
