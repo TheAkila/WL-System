@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Scale, Check, X, Search, Calendar, Dumbbell, Trophy, Shuffle } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -151,8 +150,7 @@ export default function WeighIn() {
 
       {!selectedSession ? (
         <div className="card card-lg">
-          <div className="flex items-center gap-3 mb-6">
-            <Calendar className="text-blue-600" size={24} />
+          <div className="mb-6">
             <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white">
               Select Session
             </h2>
@@ -196,10 +194,9 @@ export default function WeighIn() {
             <div className="flex gap-3">
               <button
                 onClick={handleAssignLotNumbers}
-                className="btn btn-secondary flex items-center gap-2"
+                className="btn btn-secondary"
               >
-                <Shuffle size={18} />
-                <span>Assign Lot Numbers</span>
+                Assign Lot Numbers
               </button>
               <button onClick={() => setSelectedSession(null)} className="btn btn-secondary">
                 Change Session
@@ -207,18 +204,14 @@ export default function WeighIn() {
             </div>
           </div>
 
-          <div className="card mb-6 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-heading font-semibold text-slate-900 dark:text-white">
-                Weigh-In Progress
-              </h3>
-              <span className="font-heading font-bold text-2xl text-blue-600">
-                {weighedIn}/{totalAthletes}
-              </span>
+          <div className="card mb-4 p-3">
+            <div className="flex items-center justify-between mb-2 gap-3">
+              <span className="text-xs font-medium text-slate-600 dark:text-zinc-400">Progress</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{weighedIn}/{totalAthletes}</span>
             </div>
-            <div className="w-full bg-slate-200 dark:bg-zinc-700 rounded-full h-4 overflow-hidden">
+            <div className="w-full bg-slate-300 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-600 to-green-600 transition-all duration-500"
+                className="h-full bg-slate-900 dark:bg-slate-950 transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -226,13 +219,12 @@ export default function WeighIn() {
 
           <div className="card mb-6 p-4">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
                 placeholder="Search athletes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-12"
+                className="input"
               />
             </div>
           </div>
@@ -244,7 +236,6 @@ export default function WeighIn() {
               </div>
             ) : filteredAthletes.length === 0 ? (
               <div className="card card-lg text-center py-12">
-                <Scale className="mx-auto text-slate-300 dark:text-zinc-600 mb-4" size={64} />
                 <p className="text-slate-600 dark:text-zinc-400">No athletes found</p>
               </div>
             ) : (
@@ -345,102 +336,107 @@ function WeighInRow({ athlete, onComplete, onClear }) {
   const isCompleted = athlete.weigh_in_completed_at;
 
   return (
-    <div className={`card p-6 border-2 transition-all ${
+    <div className={`card p-6 border-2 transition-all text-left rounded-xl ${
         isCompleted
-          ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-          : 'border-slate-200 dark:border-zinc-700'
-      }`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {isCompleted && <Check className="text-green-600" size={28} />}
+          ? 'border-slate-300 bg-slate-50 dark:border-zinc-600 dark:bg-zinc-900/30'
+          : 'border-slate-200 hover:border-blue-400 dark:border-zinc-700 dark:hover:border-blue-600'
+      } hover:bg-blue-50/50 dark:hover:bg-blue-900/10`}>
+      
+      {isEditing ? (
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <h4 className="font-heading font-bold text-xl text-slate-900 dark:text-white">
+            <h4 className="font-bold text-base text-slate-900 dark:text-white mb-3">
               #{athlete.start_number} {athlete.name}
             </h4>
-            <p className="text-sm text-slate-600 dark:text-zinc-400">
-              {athlete.country} • {athlete.weight_category}kg
-              {athlete.lot_number && <span> • Lot #{athlete.lot_number}</span>}
-            </p>
           </div>
-        </div>
-        {isCompleted && <button onClick={() => setIsEditing(true)} className="btn btn-secondary text-sm">Edit</button>}
-      </div>
-
-      {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2">
-                <Scale className="inline mr-2" size={16} />Body Weight (kg) *
+              <label className="block text-xs font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Body Weight (kg) *
               </label>
               <input type="number" step="0.01" min="1" required placeholder="70.50"
                 value={formData.body_weight}
                 onChange={(e) => setFormData({ ...formData, body_weight: e.target.value })}
-                className="input" />
-              {/* Weight Validation Message */}
+                className="input text-sm" />
               {weightValidation && (
-                <div className={`mt-2 p-2 rounded text-sm font-medium ${
+                <div className={`mt-1 p-1.5 text-xs font-medium rounded ${
                   weightValidation.type === 'error' 
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700' 
                     : weightValidation.type === 'warning'
                     ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700'
-                    : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
                 }`}>
                   {weightValidation.message}
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2">
-                <Dumbbell className="inline mr-2" size={16} />Opening Snatch (kg) *
+              <label className="block text-xs font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Opening Snatch (kg) *
               </label>
               <input type="number" min="1" required placeholder="100"
                 value={formData.opening_snatch}
                 onChange={(e) => setFormData({ ...formData, opening_snatch: e.target.value })}
-                className="input" />
+                className="input text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2">
-                <Trophy className="inline mr-2" size={16} />Opening C&J (kg) *
+              <label className="block text-xs font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Opening C&J (kg) *
               </label>
               <input type="number" min="1" required placeholder="120"
                 value={formData.opening_clean_jerk}
                 onChange={(e) => setFormData({ ...formData, opening_clean_jerk: e.target.value })}
-                className="input" />
+                className="input text-sm" />
             </div>
           </div>
-          <div className="flex gap-3">
-            <button type="submit" className="btn btn-primary">
-              <Check size={18} className="mr-2" />Complete Weigh-In
+          <div className="flex gap-2">
+            <button type="submit" className="btn btn-primary btn-sm">
+              Complete Weigh-In
             </button>
-            {isCompleted && <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary">Cancel</button>}
-            {isCompleted && <button type="button" onClick={() => onClear(athlete.id)} className="btn bg-red-100 text-red-600 hover:bg-red-200">
-              <X size={18} className="mr-2" />Clear
+            {isCompleted && <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>}
+            {isCompleted && <button type="button" onClick={() => onClear(athlete.id)} className="btn bg-red-100 text-red-600 hover:bg-red-200 btn-sm">
+              Clear
             </button>}
           </div>
         </form>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-white dark:bg-zinc-800 rounded-lg">
-            <Scale className="mx-auto text-blue-600 mb-2" size={24} />
-            <div className="font-heading text-2xl font-black text-slate-900 dark:text-white">{athlete.body_weight} kg</div>
-            <div className="text-xs text-slate-500">Body Weight</div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                {athlete.start_number} {athlete.name}
+              </h3>
+              {isCompleted && <span className="inline-block px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded">COMPLETED</span>}
+            </div>
+            <p className="text-sm text-slate-600 dark:text-zinc-400">
+              {athlete.weight_category}kg • {athlete.team?.name || 'N/A'}
+            </p>
           </div>
-          <div className="text-center p-4 bg-white dark:bg-zinc-800 rounded-lg">
-            <Dumbbell className="mx-auto text-green-600 mb-2" size={24} />
-            <div className="font-heading text-2xl font-black text-slate-900 dark:text-white">{athlete.opening_snatch} kg</div>
-            <div className="text-xs text-slate-500">Opening Snatch</div>
+          
+          <div className="flex gap-3 text-xs">
+            <div className="text-center">
+              <div className="font-bold text-slate-900 dark:text-white">{athlete.body_weight || '-'}</div>
+              <div className="text-slate-500 dark:text-zinc-400">BW</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-slate-900 dark:text-white">{athlete.opening_snatch || '-'}</div>
+              <div className="text-slate-500 dark:text-zinc-400">Snatch</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-slate-900 dark:text-white">{athlete.opening_clean_jerk || '-'}</div>
+              <div className="text-slate-500 dark:text-zinc-400">C&J</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-slate-900 dark:text-white">{athlete.lot_number || '-'}</div>
+              <div className="text-slate-500 dark:text-zinc-400">Lot</div>
+            </div>
           </div>
-          <div className="text-center p-4 bg-white dark:bg-zinc-800 rounded-lg">
-            <Trophy className="mx-auto text-orange-600 mb-2" size={24} />
-            <div className="font-heading text-2xl font-black text-slate-900 dark:text-white">{athlete.opening_clean_jerk} kg</div>
-            <div className="text-xs text-slate-500">Opening C&J</div>
-          </div>
-          <div className="text-center p-4 bg-white dark:bg-zinc-800 rounded-lg">
-            <Shuffle className="mx-auto text-purple-600 mb-2" size={24} />
-            <div className="font-heading text-2xl font-black text-slate-900 dark:text-white">{athlete.lot_number || '-'}</div>
-            <div className="text-xs text-slate-500">Lot Number</div>
-          </div>
+          
+          <button onClick={() => setIsEditing(true)} className="p-2 border border-slate-300 dark:border-zinc-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="Edit">
+            <svg className="w-4 h-4 text-slate-600 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
         </div>
       )}
     </div>

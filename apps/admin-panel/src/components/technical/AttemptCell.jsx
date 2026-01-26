@@ -251,12 +251,12 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
 
     // If this is the next lifter, highlight in blue
     if (isNextLifter) {
-      return 'bg-blue-300 dark:bg-blue-600 text-blue-900 dark:text-blue-100 border-blue-600 font-bold ring-2 ring-blue-400';
+      return 'bg-blue-500 dark:bg-blue-700 text-blue-900 dark:text-blue-50 border-blue-700 font-bold ring-2 ring-blue-500';
     }
 
     // If athlete is DQ'd, all attempts are red
     if (athlete?.is_dq) {
-      return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 border-red-500 font-semibold';
+      return 'bg-red-400 dark:bg-red-900/75 text-red-900 dark:text-red-50 border-red-600 font-semibold';
     }
     
     if (result === 'not_attempted') {
@@ -266,13 +266,13 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return 'bg-slate-100 dark:bg-zinc-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700';
     }
     if (result === 'good') {
-      return 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-100 border-green-400';
+      return 'bg-green-300 dark:bg-green-800/75 text-green-900 dark:text-green-50 border-green-600';
     }
     if (result === 'no_lift') {
-      return 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-100 border-red-400';
+      return 'bg-red-300 dark:bg-red-900/75 text-red-900 dark:text-red-50 border-red-600';
     }
     // Pending state - yellow
-    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 border-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50';
+    return 'bg-yellow-300 dark:bg-yellow-900/75 text-yellow-900 dark:text-yellow-50 border-yellow-600 hover:bg-yellow-400 dark:hover:bg-yellow-900/85';
   };
 
   return (
