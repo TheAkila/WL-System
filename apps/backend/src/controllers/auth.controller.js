@@ -96,6 +96,70 @@ export const getMe = async (req, res, next) => {
   }
 };
 
+// @desc    Signup / Register user
+// @route   POST /api/auth/signup
+// @access  Public
+export const signup = async (req, res, next) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password || !name) {
+      throw new AppError('Please provide email, password, and name', 400);
+    }
+
+    // Check if user already exists
+    const { data: existingUser, error: checkError } = await db.supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (existingUser && !checkError) {
+      throw new AppError('Email already registered', 409);
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const { data: newUser, error: createError } = await db.supabase
+      .from('users')
+      .insert([
+        {
+          email,
+          name,
+          password_hash: passwordHash,
+          role: 'user',
+          is_active: true,
+        },
+      ])
+      .select()
+      .single();
+
+    if (createError || !newUser) {
+      throw new AppError('Failed to create user account', 500);
+    }
+
+    // Generate token
+    const token = generateToken(newUser.id);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        },
+        token,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Logout user / clear cookie
 // @route   POST /api/auth/logout
 // @access  Private
