@@ -1,10 +1,10 @@
-const { supabase } = require('../config/supabase.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import { supabase } from '../config/supabase.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 /**
  * Upload file to Supabase Storage
  */
-const uploadFile = async (bucket, path, file, options = {}) => {
+export const uploadFile = async (bucket, path, file, options = {}) => {
   try {
     const uploadOptions = {
       cacheControl: '3600',
@@ -49,7 +49,7 @@ const uploadFile = async (bucket, path, file, options = {}) => {
 /**
  * Delete file from Supabase Storage
  */
-const deleteFile = async (bucket, path) => {
+export const deleteFile = async (bucket, path) => {
   try {
     const { error } = await supabase.storage
       .from(bucket)
@@ -69,7 +69,7 @@ const deleteFile = async (bucket, path) => {
 /**
  * Get public URL for file
  */
-const getPublicUrl = (bucket, path) => {
+export const getPublicUrl = (bucket, path) => {
   const { data } = supabase.storage
     .from(bucket)
     .getPublicUrl(path);
@@ -80,7 +80,7 @@ const getPublicUrl = (bucket, path) => {
 /**
  * List files in bucket path
  */
-const listFiles = async (bucket, path = '') => {
+export const listFiles = async (bucket, path = '') => {
   try {
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -100,7 +100,7 @@ const listFiles = async (bucket, path = '') => {
 /**
  * Generate unique filename with timestamp
  */
-const generateUniqueFileName = (originalName) => {
+export const generateUniqueFileName = (originalName) => {
   const timestamp = Date.now();
   const randomStr = Math.random().toString(36).substring(2, 8);
   const ext = originalName.split('.').pop();
@@ -113,7 +113,7 @@ const generateUniqueFileName = (originalName) => {
 /**
  * Validate image file
  */
-const validateImageFile = (file, maxSizeMB = 5) => {
+export const validateImageFile = (file, maxSizeMB = 5) => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 

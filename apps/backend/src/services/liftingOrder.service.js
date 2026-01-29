@@ -1,5 +1,5 @@
-const db = require('../services/database.js');
-const { getCurrentEffectiveWeight } = require('./weightChange.service.js');
+import db from '../services/database.js';
+import { getCurrentEffectiveWeight } from './weightChange.service.js';
 
 /**
  * Lifting Order Service
@@ -19,7 +19,7 @@ const { getCurrentEffectiveWeight } = require('./weightChange.service.js');
  * @param {string} liftType - 'snatch' or 'clean_jerk'
  * @returns {Promise<Array>} Ordered list of athletes
  */
-async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
+export async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
   try {
     // Get all athletes in session with their attempts
     const { data: athletes, error: athletesError } = await db
@@ -158,7 +158,7 @@ async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
  * @param {string} liftType - 'snatch' or 'clean_jerk'
  * @returns {Promise<Object>} { current, onDeck, inHole, fullOrder }
  */
-async function getCurrentLiftingPositions(sessionId, liftType = 'snatch') {
+export async function getCurrentLiftingPositions(sessionId, liftType = 'snatch') {
   const order = await calculateLiftingOrder(sessionId, liftType);
   
   return {
@@ -177,14 +177,12 @@ async function getCurrentLiftingPositions(sessionId, liftType = 'snatch') {
  * @param {string} liftType - 'snatch' or 'clean_jerk'
  * @returns {Promise<boolean>}
  */
-async function isAthleteCurrentLifter(sessionId, athleteId, liftType) {
+export async function isAthleteCurrentLifter(sessionId, athleteId, liftType) {
   const positions = await getCurrentLiftingPositions(sessionId, liftType);
   return positions.current?.athlete_id === athleteId;
 }
 
-
-module.exports = {
-
+export default {
   calculateLiftingOrder,
   getCurrentLiftingPositions,
   isAthleteCurrentLifter

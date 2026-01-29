@@ -1,7 +1,7 @@
-const db = require('../services/database.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import db from '../services/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 
-const getAttempts = async (req, res, next) => {
+export const getAttempts = async (req, res, next) => {
   try {
     const { sessionId, athleteId, liftType, limit = 50, offset = 0 } = req.query;
 
@@ -28,7 +28,7 @@ const getAttempts = async (req, res, next) => {
   }
 };
 
-const createAttempt = async (req, res, next) => {
+export const createAttempt = async (req, res, next) => {
   try {
     const attempt = await db.createAttempt(req.body);
 
@@ -44,7 +44,7 @@ const createAttempt = async (req, res, next) => {
   }
 };
 
-const updateAttempt = async (req, res, next) => {
+export const updateAttempt = async (req, res, next) => {
   try {
     const attempt = await db.updateAttempt(req.params.id, req.body);
 
@@ -64,7 +64,7 @@ const updateAttempt = async (req, res, next) => {
   }
 };
 
-const validateAttempt = async (req, res, next) => {
+export const validateAttempt = async (req, res, next) => {
   try {
     const { result } = req.body;
     const { referee } = req.query; // 'left', 'center', or 'right'
@@ -90,4 +90,3 @@ const validateAttempt = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { getAttempts,createAttempt,updateAttempt,validateAttempt };

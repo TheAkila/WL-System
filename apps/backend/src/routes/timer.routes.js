@@ -1,16 +1,14 @@
-const express = require('express');
-const {
-  param, body
-} = require('express-validator');
-const {
-  getTimerState, startTimer, pauseTimer, resetTimer, setPreset,
-} = require('../controllers/timer.controller.js');
-const {
-  protect, authorize
-} = require('../middleware/auth.js');
-const {
-  validate
-} = require('../middleware/validator.js');
+import express from 'express';
+import { param, body } from 'express-validator';
+import {
+  getTimerState,
+  startTimer,
+  pauseTimer,
+  resetTimer,
+  setPreset,
+} from '../controllers/timer.controller.js';
+import { protect, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -54,4 +52,4 @@ router.post(
   setPreset
 );
 
-module.exports = router;
+export default router;

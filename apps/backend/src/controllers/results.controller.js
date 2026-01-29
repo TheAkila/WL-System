@@ -1,10 +1,10 @@
-const db = require('../services/database.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import db from '../services/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 /**
  * Process session results and calculate rankings
  */
-const processSessionResults = async (req, res, next) => {
+export const processSessionResults = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -117,7 +117,7 @@ const processSessionResults = async (req, res, next) => {
 /**
  * Get session results
  */
-const getSessionResults = async (req, res, next) => {
+export const getSessionResults = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -157,7 +157,7 @@ const getSessionResults = async (req, res, next) => {
 /**
  * Get competition results (all sessions)
  */
-const getCompetitionResults = async (req, res, next) => {
+export const getCompetitionResults = async (req, res, next) => {
   try {
     const { competitionId } = req.params;
 
@@ -219,4 +219,8 @@ const getCompetitionResults = async (req, res, next) => {
   }
 };
 
-module.exports = { processSessionResults, getSessionResults, getCompetitionResults };
+export default {
+  processSessionResults,
+  getSessionResults,
+  getCompetitionResults,
+};

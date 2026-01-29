@@ -1,9 +1,9 @@
-const { supabase } = require('../config/supabase.js');
+import { supabase } from '../config/supabase.js';
 
 /**
  * Initialize storage buckets if they don't exist
  */
-const initializeStorageBuckets = async () => {
+export const initializeStorageBuckets = async () => {
   const buckets = [
     {
       name: 'athletes',
@@ -59,7 +59,8 @@ const initializeStorageBuckets = async () => {
       console.error(`❌ Error initializing bucket '${bucket.name}':`, error);
     }
   }
+
   console.log('✅ Storage initialization complete');
 };
 
-module.exports = initializeStorageBuckets;
+export default initializeStorageBuckets;

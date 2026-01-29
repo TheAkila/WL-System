@@ -1,13 +1,16 @@
-const { supabase } = require('../config/supabase.js');
-const { AppError } = require('../middleware/errorHandler.js');
-const {
-  uploadFile, deleteFile, generateUniqueFileName, validateImageFile,
-} = require('../services/storageService.js');
+import { supabase } from '../config/supabase.js';
+import { AppError } from '../middleware/errorHandler.js';
+import {
+  uploadFile,
+  deleteFile,
+  generateUniqueFileName,
+  validateImageFile,
+} from '../services/storageService.js';
 
 /**
  * Upload athlete photo
  */
-const uploadAthletePhoto = async (req, res, next) => {
+export const uploadAthletePhoto = async (req, res, next) => {
   try {
     const { athleteId } = req.params;
     const file = req.file;
@@ -94,7 +97,7 @@ const uploadAthletePhoto = async (req, res, next) => {
 /**
  * Upload competition logo
  */
-const uploadCompetitionLogo = async (req, res, next) => {
+export const uploadCompetitionLogo = async (req, res, next) => {
   try {
     const { competitionId } = req.params;
     const file = req.file;
@@ -176,7 +179,7 @@ const uploadCompetitionLogo = async (req, res, next) => {
 /**
  * Upload team logo
  */
-const uploadTeamLogo = async (req, res, next) => {
+export const uploadTeamLogo = async (req, res, next) => {
   try {
     const { teamId } = req.params;
     const file = req.file;
@@ -251,7 +254,7 @@ const uploadTeamLogo = async (req, res, next) => {
 /**
  * Delete athlete photo
  */
-const deleteAthletePhoto = async (req, res, next) => {
+export const deleteAthletePhoto = async (req, res, next) => {
   try {
     const { athleteId } = req.params;
 
@@ -289,4 +292,3 @@ const deleteAthletePhoto = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { uploadAthletePhoto,uploadCompetitionLogo,uploadTeamLogo,deleteAthletePhoto };

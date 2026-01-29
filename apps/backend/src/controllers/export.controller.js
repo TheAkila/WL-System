@@ -1,13 +1,16 @@
-const { supabase } = require('../config/supabase.js');
-const { AppError } = require('../middleware/errorHandler.js');
-const {
-  generateProtocolPDF, generateLeaderboardCSV, generateStartListCSV, cleanupTempFile,
-} = require('../services/exportService.js');
+import { supabase } from '../config/supabase.js';
+import { AppError } from '../middleware/errorHandler.js';
+import {
+  generateProtocolPDF,
+  generateLeaderboardCSV,
+  generateStartListCSV,
+  cleanupTempFile,
+} from '../services/exportService.js';
 
 /**
  * Export session protocol as PDF
  */
-const exportProtocolPDF = async (req, res, next) => {
+export const exportProtocolPDF = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -57,7 +60,7 @@ const exportProtocolPDF = async (req, res, next) => {
 /**
  * Export leaderboard as CSV
  */
-const exportLeaderboardCSV = async (req, res, next) => {
+export const exportLeaderboardCSV = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -102,7 +105,7 @@ const exportLeaderboardCSV = async (req, res, next) => {
 /**
  * Export start list as CSV
  */
-const exportStartListCSV = async (req, res, next) => {
+export const exportStartListCSV = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -155,7 +158,7 @@ const exportStartListCSV = async (req, res, next) => {
 /**
  * Export competition results (all sessions) as PDF
  */
-const exportCompetitionPDF = async (req, res, next) => {
+export const exportCompetitionPDF = async (req, res, next) => {
   try {
     const { competitionId } = req.params;
 
@@ -204,4 +207,3 @@ const exportCompetitionPDF = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { exportProtocolPDF,exportLeaderboardCSV,exportStartListCSV,exportCompetitionPDF };

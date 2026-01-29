@@ -1,10 +1,10 @@
-const db = require('../services/database.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import db from '../services/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 /**
  * Get all teams
  */
-const getTeams = async (req, res, next) => {
+export const getTeams = async (req, res, next) => {
   try {
     const { country } = req.query;
 
@@ -34,7 +34,7 @@ const getTeams = async (req, res, next) => {
 /**
  * Get single team
  */
-const getTeam = async (req, res, next) => {
+export const getTeam = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -58,7 +58,7 @@ const getTeam = async (req, res, next) => {
 /**
  * Create new team
  */
-const createTeam = async (req, res, next) => {
+export const createTeam = async (req, res, next) => {
   try {
     const { name, country, manager_phone } = req.body;
 
@@ -91,7 +91,7 @@ const createTeam = async (req, res, next) => {
 /**
  * Update team
  */
-const updateTeam = async (req, res, next) => {
+export const updateTeam = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, country, logo_url, manager_phone } = req.body;
@@ -123,7 +123,7 @@ const updateTeam = async (req, res, next) => {
 /**
  * Delete team
  */
-const deleteTeam = async (req, res, next) => {
+export const deleteTeam = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -146,7 +146,7 @@ const deleteTeam = async (req, res, next) => {
 /**
  * Get team standings for a competition
  */
-const getTeamStandings = async (req, res, next) => {
+export const getTeamStandings = async (req, res, next) => {
   try {
     const { competitionId } = req.params;
 
@@ -166,4 +166,3 @@ const getTeamStandings = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { getTeams,getTeam,createTeam,updateTeam,deleteTeam,getTeamStandings };

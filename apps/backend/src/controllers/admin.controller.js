@@ -1,14 +1,14 @@
-const { supabase } = require('../config/supabase.js');
-const { AppError } = require('../middleware/errorHandler.js');
-const bcrypt = require('bcryptjs');
+import { supabase } from '../config/supabase.js';
+import { AppError } from '../middleware/errorHandler.js';
+import bcrypt from 'bcryptjs';
 
 /**
  * Get all users
  */
-const getAllUsers = async (req, res, next) => {
+export const getAllUsers = async (req, res, next) => {
   try {
     const { data: users, error } = await supabase
-      .from('wl_users')
+      .from('users')
       .select('id, email, role, created_at')
       .order('created_at', { ascending: false });
 
@@ -29,13 +29,13 @@ const getAllUsers = async (req, res, next) => {
 /**
  * Create new user
  */
-const createUser = async (req, res, next) => {
+export const createUser = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
 
     // Check if user already exists
     const { data: existingUser } = await supabase
-      .from('wl_users')
+      .from('users')
       .select('id')
       .eq('email', email)
       .single();
@@ -49,7 +49,7 @@ const createUser = async (req, res, next) => {
 
     // Create user
     const { data: user, error } = await supabase
-      .from('wl_users')
+      .from('users')
       .insert({
         email,
         password: hashedPassword,
@@ -75,7 +75,7 @@ const createUser = async (req, res, next) => {
 /**
  * Update user role
  */
-const updateUserRole = async (req, res, next) => {
+export const updateUserRole = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
@@ -86,7 +86,7 @@ const updateUserRole = async (req, res, next) => {
     }
 
     const { data: user, error } = await supabase
-      .from('wl_users')
+      .from('users')
       .update({ role })
       .eq('id', userId)
       .select('id, email, role, created_at')
@@ -109,7 +109,7 @@ const updateUserRole = async (req, res, next) => {
 /**
  * Delete user
  */
-const deleteUser = async (req, res, next) => {
+export const deleteUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
@@ -119,7 +119,7 @@ const deleteUser = async (req, res, next) => {
     }
 
     const { error } = await supabase
-      .from('wl_users')
+      .from('users')
       .delete()
       .eq('id', userId);
 
@@ -139,7 +139,7 @@ const deleteUser = async (req, res, next) => {
 /**
  * Change user password
  */
-const changePassword = async (req, res, next) => {
+export const changePassword = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const { newPassword } = req.body;
@@ -148,7 +148,7 @@ const changePassword = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     const { error } = await supabase
-      .from('wl_users')
+      .from('users')
       .update({ password: hashedPassword })
       .eq('id', userId);
 
@@ -168,11 +168,11 @@ const changePassword = async (req, res, next) => {
 /**
  * Get system statistics
  */
-const getSystemStats = async (req, res, next) => {
+export const getSystemStats = async (req, res, next) => {
   try {
     // Get counts from various tables
     const [usersResult, competitionsResult, athletesResult, sessionsResult] = await Promise.all([
-      supabase.from('wl_users').select('id', { count: 'exact', head: true }),
+      supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('competitions').select('id', { count: 'exact', head: true }),
       supabase.from('athletes').select('id', { count: 'exact', head: true }),
       supabase.from('sessions').select('id', { count: 'exact', head: true }),
@@ -195,4 +195,3 @@ const getSystemStats = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { getAllUsers,createUser,updateUserRole,deleteUser,changePassword,getSystemStats };

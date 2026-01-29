@@ -1,12 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const logger = require('../utils/logger.js');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import logger from '../utils/logger.js';
 
-const setupMiddleware = (app) => {
+export const setupMiddleware = (app) => {
   // Security headers
   app.use(helmet());
 
@@ -69,5 +69,3 @@ const setupMiddleware = (app) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 };
-
-module.exports = { setupMiddleware };

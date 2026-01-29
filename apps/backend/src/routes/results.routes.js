@@ -1,10 +1,10 @@
-const express = require('express');
-const {
-  protect
-} = require('../middleware/auth.js');
-const {
-  processSessionResults, getSessionResults, getCompetitionResults,
-} = require('../controllers/results.controller.js');
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import {
+  processSessionResults,
+  getSessionResults,
+  getCompetitionResults,
+} from '../controllers/results.controller.js';
 
 const router = express.Router();
 
@@ -17,4 +17,4 @@ router.get('/sessions/:sessionId', protect, getSessionResults);
 // Get competition results (all sessions)
 router.get('/competitions/:competitionId', protect, getCompetitionResults);
 
-module.exports = router;
+export default router;

@@ -4,8 +4,8 @@
  * Implements IWF rules: +1kg minimum, no decreases, max 2 changes per lift
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const { supabase } = require('../config/supabase.js');
+import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../config/supabase.js';
 
 /**
  * Request a weight change for an athlete
@@ -20,7 +20,7 @@ const { supabase } = require('../config/supabase.js');
  * @param {string} params.notes - Optional notes
  * @returns {Promise<Object>} Created weight change request
  */
-async function requestWeightChange({
+export async function requestWeightChange({
   athleteId,
   sessionId,
   liftType,
@@ -113,7 +113,7 @@ async function validateWeightChange(athleteId, liftType, oldWeight, newWeight) {
  * @param {string} liftType - Optional filter by lift type
  * @returns {Promise<Array>} Array of weight change requests
  */
-async function getWeightChanges(sessionId, liftType = null) {
+export async function getWeightChanges(sessionId, liftType = null) {
   let query = supabase
     .from('weight_change_requests')
     .select(`
@@ -154,7 +154,7 @@ async function getWeightChanges(sessionId, liftType = null) {
  * @param {string} liftType - 'snatch' or 'clean_jerk'
  * @returns {Promise<number>} Number of approved weight changes
  */
-async function getWeightChangeCount(athleteId, liftType) {
+export async function getWeightChangeCount(athleteId, liftType) {
   const { data, error } = await supabase
     .from('weight_change_requests')
     .select('id')
@@ -177,7 +177,7 @@ async function getWeightChangeCount(athleteId, liftType) {
  * @param {string} liftType - 'snatch' or 'clean_jerk'
  * @returns {Promise<number|null>} Current effective weight or null
  */
-async function getCurrentEffectiveWeight(athleteId, liftType) {
+export async function getCurrentEffectiveWeight(athleteId, liftType) {
   // Check for most recent weight change
   const { data: weightChange, error: changeError } = await supabase
     .from('weight_change_requests')
@@ -212,7 +212,7 @@ async function getCurrentEffectiveWeight(athleteId, liftType) {
  * @param {string} weightChangeId - UUID of the weight change request
  * @returns {Promise<Object>} Updated weight change request
  */
-async function cancelWeightChange(weightChangeId) {
+export async function cancelWeightChange(weightChangeId) {
   const { data, error } = await supabase
     .from('weight_change_requests')
     .update({ approved: false })
@@ -234,7 +234,7 @@ async function cancelWeightChange(weightChangeId) {
  * @param {string} liftType - Optional filter by lift type
  * @returns {Promise<Array>} Array of weight change requests
  */
-async function getAthleteWeightChanges(athleteId, liftType = null) {
+export async function getAthleteWeightChanges(athleteId, liftType = null) {
   let query = supabase
     .from('weight_change_requests')
     .select('*')
@@ -255,9 +255,7 @@ async function getAthleteWeightChanges(athleteId, liftType = null) {
   return data || [];
 }
 
-
-module.exports = {
-
+export default {
   requestWeightChange,
   validateWeightChange,
   getWeightChanges,

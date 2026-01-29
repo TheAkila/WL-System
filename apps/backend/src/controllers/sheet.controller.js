@@ -1,8 +1,8 @@
-const { supabase } = require('../services/database.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import { supabase } from '../services/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 // Get sheet data with all athletes and their attempts - OPTIMIZED
-const getSessionSheet = async (req, res, next) => {
+export const getSessionSheet = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -87,7 +87,7 @@ const getSessionSheet = async (req, res, next) => {
 };
 
 // Update or create an attempt
-const updateSheetAttempt = async (req, res, next) => {
+export const updateSheetAttempt = async (req, res, next) => {
   try {
     const { athlete_id, session_id, lift_type, attempt_number, weight, result } = req.body;
 
@@ -201,4 +201,3 @@ const updateSheetAttempt = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { getSessionSheet,updateSheetAttempt };

@@ -1,14 +1,16 @@
-const express = require('express');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-require('dotenv').config();
-const { errorHandler } = require('./middleware/errorHandler.js');
-const { setupMiddleware } = require('./middleware/index.js');
-const { setupRoutes } = require('./routes/index.js');
-const { setupSocketIO } = require('./socket/index.js');
-const logger = require('./utils/logger.js');
-const seedDefaultUsers = require('./utils/seedUsers.js');
-const initializeStorageBuckets = require('./services/storageSetup.js');
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+import { errorHandler } from './middleware/errorHandler.js';
+import { setupMiddleware } from './middleware/index.js';
+import { setupRoutes } from './routes/index.js';
+import { setupSocketIO } from './socket/index.js';
+import logger from './utils/logger.js';
+import seedDefaultUsers from './utils/seedUsers.js';
+import initializeStorageBuckets from './services/storageSetup.js';
+
+dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);

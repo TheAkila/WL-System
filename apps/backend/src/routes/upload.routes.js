@@ -1,17 +1,14 @@
-const express = require('express');
-const multer = require('multer');
-const {
-  param
-} = require('express-validator');
-const {
-  uploadAthletePhoto, uploadCompetitionLogo, uploadTeamLogo, deleteAthletePhoto,
-} = require('../controllers/upload.controller.js');
-const {
-  protect, authorize
-} = require('../middleware/auth.js');
-const {
-  validate
-} = require('../middleware/validator.js');
+import express from 'express';
+import multer from 'multer';
+import { param } from 'express-validator';
+import {
+  uploadAthletePhoto,
+  uploadCompetitionLogo,
+  uploadTeamLogo,
+  deleteAthletePhoto,
+} from '../controllers/upload.controller.js';
+import { protect, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -65,4 +62,4 @@ router.post(
   uploadTeamLogo
 );
 
-module.exports = router;
+export default router;

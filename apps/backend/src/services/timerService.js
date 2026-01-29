@@ -238,4 +238,4 @@ class TimerService {
 // Singleton instance
 const timerService = new TimerService();
 
-module.exports = timerService;
+export default timerService;

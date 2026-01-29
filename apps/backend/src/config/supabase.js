@@ -1,5 +1,7 @@
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -9,7 +11,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 // Create Supabase client with service role key (for backend only)
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
@@ -17,11 +19,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 // Create client with anon key (for frontend)
-const supabaseAnon = createClient(
+export const supabaseAnon = createClient(
   supabaseUrl,
   process.env.SUPABASE_ANON_KEY || ''
 );
 
-module.exports = supabase;
-module.exports.supabase = supabase;
-module.exports.supabaseAnon = supabaseAnon;
+export default supabase;

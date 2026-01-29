@@ -1,5 +1,5 @@
-const { supabase } = require('../services/database.js');
-const { AppError } = require('../middleware/errorHandler.js');
+import { supabase } from '../services/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 // IWF Weight Categories (2024 Rules)
 const WEIGHT_CATEGORIES = {
@@ -54,7 +54,7 @@ const validateWeightCategory = (bodyWeight, weightCategory, gender) => {
   return { valid: true, message: 'Weight within category limits' };
 };
 
-const getAthletes = async (req, res, next) => {
+export const getAthletes = async (req, res, next) => {
   try {
     const { sessionId, gender, weightCategory, limit = 100, offset = 0 } = req.query;
     const sessionIdFromParam = req.params.sessionId; // Support both route param and query param
@@ -92,7 +92,7 @@ const getAthletes = async (req, res, next) => {
   }
 };
 
-const getAthlete = async (req, res, next) => {
+export const getAthlete = async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('athletes')
@@ -111,7 +111,7 @@ const getAthlete = async (req, res, next) => {
   }
 };
 
-const createAthlete = async (req, res, next) => {
+export const createAthlete = async (req, res, next) => {
   try {
     // Validate required fields
     const { name, gender, weight_category, session_id, team_id, id_number, registration_number, best_total, coach_name, birth_date } = req.body;
@@ -183,7 +183,7 @@ const createAthlete = async (req, res, next) => {
   }
 };
 
-const updateAthlete = async (req, res, next) => {
+export const updateAthlete = async (req, res, next) => {
   try {
     // Validate bodyweight against weight category if body_weight is being updated
     if (req.body.body_weight) {
@@ -248,7 +248,7 @@ const updateAthlete = async (req, res, next) => {
   }
 };
 
-const deleteAthlete = async (req, res, next) => {
+export const deleteAthlete = async (req, res, next) => {
   try {
     const { error } = await supabase
       .from('athletes')
@@ -265,4 +265,3 @@ const deleteAthlete = async (req, res, next) => {
     next(error);
   }
 };
-module.exports = { validateWeightCategory,getAthletes,getAthlete,createAthlete,updateAthlete,deleteAthlete };

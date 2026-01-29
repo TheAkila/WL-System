@@ -5,9 +5,9 @@
  * Uses Supabase for database operations
  */
 
-const { supabase } = require('../config/supabase.js');
+import { supabase } from '../config/supabase.js';
 
-class SessionStateMachine {
+export class SessionStateMachine {
   /**
    * State machine configuration
    * Defines valid transitions and button availability
@@ -649,4 +649,4 @@ class SessionStateMachine {
   }
 }
 
-module.exports = SessionStateMachine;
+export default SessionStateMachine;

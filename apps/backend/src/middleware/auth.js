@@ -1,8 +1,8 @@
-const jwt = require('jsonwebtoken');
-const { AppError } = require('./errorHandler.js');
-const db = require('../services/database.js');
+import jwt from 'jsonwebtoken';
+import { AppError } from './errorHandler.js';
+import db from '../services/database.js';
 
-const protect = async (req, res, next) => {
+export const protect = async (req, res, next) => {
   try {
     let token;
 
@@ -20,7 +20,7 @@ const protect = async (req, res, next) => {
       
       // Get user from database
       const { data: user, error } = await db.supabase
-        .from('wl_users')
+        .from('users')
         .select('*')
         .eq('id', decoded.id)
         .single();
@@ -49,7 +49,7 @@ const protect = async (req, res, next) => {
   }
 };
 
-const authorize = (...roles) => {
+export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return next(new AppError('Not authenticated', 401));
@@ -63,5 +63,3 @@ const authorize = (...roles) => {
     next();
   };
 };
-
-module.exports = { protect, authorize };

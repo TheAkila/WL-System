@@ -1,11 +1,10 @@
-const logger = require('../utils/logger.js');
-const db = require('../services/database.js');
-const { supabase } = require('../services/database.js');
+import logger from '../utils/logger.js';
+import db, { supabase } from '../services/database.js';
 
 let ioInstance = null;
 const realtimeSubscriptions = new Map();
 
-const setupSocketIO = (io) => {
+export const setupSocketIO = (io) => {
   ioInstance = io;
 
   io.on('connection', (socket) => {
@@ -285,7 +284,7 @@ const broadcastLeaderboardUpdate = async (sessionId, io) => {
 };
 
 // Broadcast lifting order update to all clients in a session
-const broadcastLiftingOrderUpdate = async (sessionId, liftType = 'snatch') => {
+export const broadcastLiftingOrderUpdate = async (sessionId, liftType = 'snatch') => {
   if (!ioInstance) return;
   
   try {
@@ -306,7 +305,7 @@ const broadcastLiftingOrderUpdate = async (sessionId, liftType = 'snatch') => {
 };
 
 // Export function to emit events from controllers
-const emitToSession = (sessionId, event, data) => {
+export const emitToSession = (sessionId, event, data) => {
   if (ioInstance) {
     ioInstance.to(`session:${sessionId}`).emit(event, data);
     logger.info(`✅ Emitted ${event} to session:${sessionId}`);
@@ -314,12 +313,10 @@ const emitToSession = (sessionId, event, data) => {
 };
 
 // Cleanup function for graceful shutdown
-const cleanupRealtimeSubscriptions = () => {
+export const cleanupRealtimeSubscriptions = () => {
   realtimeSubscriptions.forEach((channel, key) => {
     channel.unsubscribe();
     logger.info(`🔕 Unsubscribed from ${key}`);
   });
   realtimeSubscriptions.clear();
 };
-
-module.exports = { setupSocketIO };
