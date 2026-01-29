@@ -9,12 +9,23 @@ import timerRoutes from './timer.routes.js';
 import teamRoutes from './team.routes.js';
 import notificationRoutes from './notification.routes.js';
 import uploadRoutes from './upload.routes.js';
-import exportRoutes from './export.routes.js';
 import adminRoutes from './admin.routes.js';
 import resultsRoutes from './results.routes.js';
 import liftingOrderRoutes from './liftingOrder.routes.js';
 import weightChangeRoutes from './weightChange.routes.js';
 import sheetRoutes from './sheet.routes.js';
+
+// Export routes disabled on Vercel due to pdfkit compatibility
+let exportRoutes = null;
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+if (!isVercel) {
+  try {
+    const module = await import('./export.routes.js');
+    exportRoutes = module.default;
+  } catch (e) {
+    console.warn('Export routes not available:', e.message);
+  }
+}
 
 export const setupRoutes = (app) => {
   // API routes
@@ -29,7 +40,7 @@ export const setupRoutes = (app) => {
   app.use('/api/teams', teamRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/uploads', uploadRoutes);
-  app.use('/api/exports', exportRoutes);
+  if (exportRoutes) app.use('/api/exports', exportRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/results', resultsRoutes);
   app.use('/api/sessions', liftingOrderRoutes);
