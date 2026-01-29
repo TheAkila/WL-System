@@ -119,7 +119,5 @@ if (!isVercel && process.env.NODE_ENV !== 'production') {
   initializeStorageBuckets().catch(err => logger.error('Storage init failed:', err));
 }
 
-module.exports = app;
-module.exports.app = app;
-module.exports.httpServer = httpServer;
-module.exports.io = io;
+export default app;
+export { app, httpServer, io };
