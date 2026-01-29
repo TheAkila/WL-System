@@ -1,22 +1,23 @@
-import authRoutes from './auth.routes.js';
-import competitionRoutes from './competition.routes.js';
-import athleteRoutes from './athlete.routes.js';
-import attemptRoutes from './attempt.routes.js';
-import sessionRoutes from './session.routes.js';
-import sessionStateRoutes from './sessionState.routes.js';
-import technicalRoutes from './technical.routes.js';
-import timerRoutes from './timer.routes.js';
-import teamRoutes from './team.routes.js';
-import notificationRoutes from './notification.routes.js';
-import uploadRoutes from './upload.routes.js';
-import exportRoutes from './export.routes.js';
-import adminRoutes from './admin.routes.js';
-import resultsRoutes from './results.routes.js';
-import liftingOrderRoutes from './liftingOrder.routes.js';
-import weightChangeRoutes from './weightChange.routes.js';
-import sheetRoutes from './sheet.routes.js';
+const authRoutes = require('./auth.routes.js');
+const competitionRoutes = require('./competition.routes.js');
+const athleteRoutes = require('./athlete.routes.js');
+const attemptRoutes = require('./attempt.routes.js');
+const sessionRoutes = require('./session.routes.js');
+const sessionStateRoutes = require('./sessionState.routes.js');
+const technicalRoutes = require('./technical.routes.js');
+const timerRoutes = require('./timer.routes.js');
+const teamRoutes = require('./team.routes.js');
+const notificationRoutes = require('./notification.routes.js');
+const uploadRoutes = require('./upload.routes.js');
+// Temporarily disabled - pdfkit is ES module and causes issues
+// const exportRoutes = require('./export.routes.js');
+const adminRoutes = require('./admin.routes.js');
+const resultsRoutes = require('./results.routes.js');
+const liftingOrderRoutes = require('./liftingOrder.routes.js');
+const weightChangeRoutes = require('./weightChange.routes.js');
+const sheetRoutes = require('./sheet.routes.js');
 
-export const setupRoutes = (app) => {
+const setupRoutes = (app) => {
   // API routes
   app.use('/api/auth', authRoutes);
   app.use('/api/competitions', competitionRoutes);
@@ -29,7 +30,7 @@ export const setupRoutes = (app) => {
   app.use('/api/teams', teamRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/uploads', uploadRoutes);
-  app.use('/api/exports', exportRoutes);
+  // app.use('/api/exports', exportRoutes);  // Temporarily disabled
   app.use('/api/admin', adminRoutes);
   app.use('/api/results', resultsRoutes);
   app.use('/api/sessions', liftingOrderRoutes);
@@ -44,3 +45,5 @@ export const setupRoutes = (app) => {
     });
   });
 };
+
+module.exports = { setupRoutes };

@@ -6,7 +6,7 @@ const logger = require('./logger.js');
  * Seed default users if they don't exist
  * This helps with initial setup and testing
  */
-module.exports.async function seedDefaultUsers() {
+async function seedDefaultUsers() {
   try {
     logger.info('Checking for default users...');
 
