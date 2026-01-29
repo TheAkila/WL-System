@@ -1,10 +1,10 @@
-import db from '../services/database.js';
-import { AppError } from '../middleware/errorHandler.js';
-import timerService from '../services/timerService.js';
+const db = require('../services/database.js');
+const { AppError } = require('../middleware/errorHandler.js');
+const timerService = require('../services/timerService.js');
 
 // Get session sheet with athletes and their attempts
 // Auto-creates first attempts from opening declarations if they don't exist
-export const getSessionSheet = async (req, res, next) => {
+const getSessionSheet = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -114,7 +114,7 @@ export const getSessionSheet = async (req, res, next) => {
 };
 
 // Get all active sessions
-export const getActiveSessions = async (req, res, next) => {
+const getActiveSessions = async (req, res, next) => {
   try {
     const { data, error } = await db.supabase
       .from('sessions')
@@ -135,7 +135,7 @@ export const getActiveSessions = async (req, res, next) => {
 };
 
 // Get lifting order for a session
-export const getLiftingOrder = async (req, res, next) => {
+const getLiftingOrder = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { liftType } = req.query; // snatch or clean_and_jerk
@@ -179,7 +179,7 @@ export const getLiftingOrder = async (req, res, next) => {
 };
 
 // Declare an attempt for an athlete
-export const declareAttempt = async (req, res, next) => {
+const declareAttempt = async (req, res, next) => {
   try {
     const { athleteId, weight, liftType } = req.body;
 
@@ -297,7 +297,7 @@ export const declareAttempt = async (req, res, next) => {
 };
 
 // Record referee decision
-export const recordRefereeDecision = async (req, res, next) => {
+const recordRefereeDecision = async (req, res, next) => {
   try {
     const { attemptId } = req.params;
     const { position, decision } = req.body;
@@ -376,7 +376,7 @@ export const recordRefereeDecision = async (req, res, next) => {
 };
 
 // Quick decision - automatically record all 3 referee decisions
-export const recordQuickDecision = async (req, res, next) => {
+const recordQuickDecision = async (req, res, next) => {
   try {
     const { attemptId } = req.params;
     const { decision } = req.body;
@@ -449,7 +449,7 @@ export const recordQuickDecision = async (req, res, next) => {
 };
 
 // Jury override - Override referee decision (IWF Rule 3.3.5)
-export const recordJuryOverride = async (req, res, next) => {
+const recordJuryOverride = async (req, res, next) => {
   try {
     const { attemptId } = req.params;
     const { decision, reason } = req.body;
@@ -508,7 +508,7 @@ export const recordJuryOverride = async (req, res, next) => {
 };
 
 // Get current attempt in progress
-export const getCurrentAttempt = async (req, res, next) => {
+const getCurrentAttempt = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { liftType } = req.query; // snatch or clean_and_jerk
@@ -540,7 +540,7 @@ export const getCurrentAttempt = async (req, res, next) => {
 };
 
 // Get session leaderboard
-export const getSessionLeaderboard = async (req, res, next) => {
+const getSessionLeaderboard = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -562,7 +562,7 @@ export const getSessionLeaderboard = async (req, res, next) => {
 };
 
 // Update session status
-export const updateSessionStatus = async (req, res, next) => {
+const updateSessionStatus = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { status } = req.body;
@@ -613,7 +613,7 @@ export const updateSessionStatus = async (req, res, next) => {
 };
 
 // Change current lift (snatch to clean & jerk)
-export const changeCurrentLift = async (req, res, next) => {
+const changeCurrentLift = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { liftType } = req.body;
@@ -644,7 +644,7 @@ export const changeCurrentLift = async (req, res, next) => {
 };
 
 // Update athlete medal (manual override)
-export const updateAthleteMedal = async (req, res, next) => {
+const updateAthleteMedal = async (req, res, next) => {
   try {
     const { athleteId } = req.params;
     const { medal } = req.body;
@@ -691,7 +691,7 @@ export const updateAthleteMedal = async (req, res, next) => {
   }
 };
 // Request weight change (IWF Rule 6.5.1 - Weight change regulations)
-export const requestWeightChange = async (req, res, next) => {
+const requestWeightChange = async (req, res, next) => {
   try {
     const { athleteId, weight, liftType, attemptNumber } = req.body;
 
@@ -773,4 +773,4 @@ export const requestWeightChange = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+};module.exports = { getSessionSheet,getActiveSessions,getLiftingOrder,declareAttempt,recordRefereeDecision,recordQuickDecision,recordJuryOverride,getCurrentAttempt,getSessionLeaderboard,updateSessionStatus,changeCurrentLift,updateAthleteMedal,requestWeightChange };

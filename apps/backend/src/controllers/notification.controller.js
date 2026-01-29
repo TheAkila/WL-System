@@ -1,9 +1,9 @@
-import { AppError } from '../middleware/errorHandler.js';
+const { AppError } = require('../middleware/errorHandler.js');
 
 /**
  * Send announcement to session
  */
-export const sendAnnouncement = async (req, res, next) => {
+const sendAnnouncement = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { message, type } = req.body;
@@ -36,7 +36,7 @@ export const sendAnnouncement = async (req, res, next) => {
 /**
  * Call athlete to platform (on-deck notification)
  */
-export const callAthlete = async (req, res, next) => {
+const callAthlete = async (req, res, next) => {
   try {
     const { sessionId, athleteId } = req.params;
     const { position } = req.body; // 'current', 'on-deck', 'in-hole'
@@ -65,7 +65,7 @@ export const callAthlete = async (req, res, next) => {
 /**
  * Send system notification
  */
-export const sendNotification = async (req, res, next) => {
+const sendNotification = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { title, message, priority } = req.body;
@@ -90,3 +90,4 @@ export const sendNotification = async (req, res, next) => {
     next(error);
   }
 };
+module.exports = { sendAnnouncement,callAthlete,sendNotification };

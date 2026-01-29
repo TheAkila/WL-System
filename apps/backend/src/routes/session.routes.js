@@ -1,18 +1,16 @@
-import express from 'express';
-import { body } from 'express-validator';
-import {
-  getSessions,
-  getSession,
-  createSession,
-  updateSession,
-  deleteSession,
-  startSession,
-  endSession,
-  clearSessionAttempts,
-  getSessionAthletes,
-} from '../controllers/session.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body
+} = require('express-validator');
+const {
+  getSessions, getSession, createSession, updateSession, deleteSession, startSession, endSession, clearSessionAttempts, getSessionAthletes,
+} = require('../controllers/session.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -41,4 +39,4 @@ router.post('/:id/start', protect, authorize('admin', 'technical'), startSession
 router.post('/:id/end', protect, authorize('admin', 'technical'), endSession);
 router.delete('/:id/attempts/clear', protect, authorize('admin', 'technical'), clearSessionAttempts);
 
-export default router;
+module.exports = router;

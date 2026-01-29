@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import db from '../services/database.js';
-import { AppError } from '../middleware/errorHandler.js';
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const db = require('../services/database.js');
+const { AppError } = require('../middleware/errorHandler.js');
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -13,7 +13,7 @@ const generateToken = (userId) => {
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req, res, next) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -23,7 +23,7 @@ export const login = async (req, res, next) => {
 
     // Get user from database
     const { data: user, error } = await db.supabase
-      .from('users')
+      .from('wl_users')
       .select('*')
       .eq('email', email)
       .single();
@@ -75,10 +75,10 @@ export const login = async (req, res, next) => {
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
-export const getMe = async (req, res, next) => {
+const getMe = async (req, res, next) => {
   try {
     const { data: user, error } = await db.supabase
-      .from('users')
+      .from('wl_users')
       .select('*')
       .eq('id', req.user.id)
       .single();
@@ -99,7 +99,7 @@ export const getMe = async (req, res, next) => {
 // @desc    Logout user / clear cookie
 // @route   POST /api/auth/logout
 // @access  Private
-export const logout = async (req, res, next) => {
+const logout = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
@@ -109,3 +109,5 @@ export const logout = async (req, res, next) => {
     next(error);
   }
 };
+
+module.exports = { generateToken, login, getMe, logout };

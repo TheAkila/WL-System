@@ -1,13 +1,16 @@
-import express from 'express';
-import { param } from 'express-validator';
-import {
-  exportProtocolPDF,
-  exportLeaderboardCSV,
-  exportStartListCSV,
-  exportCompetitionPDF,
-} from '../controllers/export.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  param
+} = require('express-validator');
+const {
+  exportProtocolPDF, exportLeaderboardCSV, exportStartListCSV, exportCompetitionPDF,
+} = require('../controllers/export.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -49,4 +52,4 @@ router.get(
   exportCompetitionPDF
 );
 
-export default router;
+module.exports = router;

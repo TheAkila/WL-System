@@ -1,6 +1,10 @@
-import express from 'express';
-import { getSessionSheet, updateSheetAttempt } from '../controllers/sheet.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
+const express = require('express');
+const {
+  getSessionSheet, updateSheetAttempt
+} = require('../controllers/sheet.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
 
 const router = express.Router();
 
@@ -10,4 +14,4 @@ router.get('/sessions/:sessionId/sheet', getSessionSheet);
 // Update attempt in sheet
 router.put('/sheet/attempt', protect, authorize('admin', 'technical'), updateSheetAttempt);
 
-export default router;
+module.exports = router;

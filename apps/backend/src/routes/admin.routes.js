@@ -1,15 +1,16 @@
-import express from 'express';
-import { body, param } from 'express-validator';
-import {
-  getAllUsers,
-  createUser,
-  updateUserRole,
-  deleteUser,
-  changePassword,
-  getSystemStats,
-} from '../controllers/admin.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body, param
+} = require('express-validator');
+const {
+  getAllUsers, createUser, updateUserRole, deleteUser, changePassword, getSystemStats,
+} = require('../controllers/admin.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -61,4 +62,4 @@ router.delete(
 // System stats
 router.get('/stats', getSystemStats);
 
-export default router;
+module.exports = router;

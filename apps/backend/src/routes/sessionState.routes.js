@@ -3,8 +3,8 @@
  * Handles all session state transitions and workflow operations
  */
 
-import express from 'express';
-import SessionStateMachine from '../services/sessionStateMachine.service.js';
+const express = require('express');
+const SessionStateMachine = require('../services/sessionStateMachine.service.js');
 
 const router = express.Router();
 
@@ -339,4 +339,4 @@ router.get('/:sessionId/state-history', async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

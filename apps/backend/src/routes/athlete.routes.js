@@ -1,14 +1,16 @@
-import express from 'express';
-import { body } from 'express-validator';
-import {
-  getAthletes,
-  getAthlete,
-  createAthlete,
-  updateAthlete,
-  deleteAthlete,
-} from '../controllers/athlete.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body
+} = require('express-validator');
+const {
+  getAthletes, getAthlete, createAthlete, updateAthlete, deleteAthlete,
+} = require('../controllers/athlete.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -31,4 +33,4 @@ router.post(
 router.put('/:id', protect, authorize('admin', 'technical'), updateAthlete);
 router.delete('/:id', protect, authorize('admin'), deleteAthlete);
 
-export default router;
+module.exports = router;

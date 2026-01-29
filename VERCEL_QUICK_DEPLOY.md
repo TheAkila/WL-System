@@ -23,8 +23,11 @@
      Key: NODE_ENV          Value: production
      Key: SUPABASE_URL      Value: https://axhbgtkdvghjxtrcvbkc.supabase.co
      Key: SUPABASE_KEY      Value: <paste your service role key>
+     Key: CORS_ORIGIN       Value: https://wl-system-admin-panel.vercel.app,https://wl-system-display.vercel.app,https://wl-system-scoreboard.vercel.app
+     Key: SOCKET_IO_CORS_ORIGIN Value: https://wl-system-admin-panel.vercel.app,https://wl-system-display.vercel.app,https://wl-system-scoreboard.vercel.app
      Key: PORT              Value: 5000
      ```
+   - ⚠️ **Important:** Use your actual frontend Vercel URLs (replace the example URLs above)
    - **Where to get SUPABASE_KEY:**
      1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
      2. Select your project
@@ -90,6 +93,8 @@ Test login, create session, verify real-time updates work.
 NODE_ENV=production
 SUPABASE_URL=https://axhbgtkdvghjxtrcvbkc.supabase.co
 SUPABASE_KEY=<get from Supabase Dashboard → Settings → API → service_role>
+CORS_ORIGIN=https://wl-system-admin-panel.vercel.app,https://wl-system-display.vercel.app,https://wl-system-scoreboard.vercel.app
+SOCKET_IO_CORS_ORIGIN=https://wl-system-admin-panel.vercel.app,https://wl-system-display.vercel.app,https://wl-system-scoreboard.vercel.app
 PORT=5000
 ```
 

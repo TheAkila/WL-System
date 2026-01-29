@@ -1,4 +1,4 @@
-import winston from 'winston';
+const winston = require('winston');
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
@@ -26,4 +26,4 @@ if (process.env.NODE_ENV === 'test') {
   logger.transports.forEach((t) => (t.silent = true));
 }
 
-export default logger;
+module.exports = logger;

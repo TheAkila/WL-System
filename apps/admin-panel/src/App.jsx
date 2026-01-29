@@ -13,6 +13,7 @@ import Teams from './pages/Teams';
 import WeighIn from './pages/WeighIn';
 import UserManagement from './pages/UserManagement';
 import SystemSettings from './pages/SystemSettings';
+import Registrations from './pages/Registrations';
 import Layout from './components/Layout';
 
 const router = createBrowserRouter(
@@ -48,6 +49,10 @@ const router = createBrowserRouter(
         {
           path: 'weigh-in',
           element: <WeighIn />,
+        },
+        {
+          path: 'registrations',
+          element: <Registrations />,
         },
         {
           path: 'sessions',

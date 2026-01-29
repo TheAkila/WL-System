@@ -3,9 +3,11 @@
  * API endpoints for managing athlete weight changes during competition
  */
 
-import express from 'express';
-import { AppError } from '../middleware/errorHandler.js';
-import * as weightChangeService from '../services/weightChange.service.js';
+const express = require('express');
+const {
+  AppError
+} = require('../middleware/errorHandler.js');
+const weightChangeService = require('../services/weightChange.service.js');
 
 const router = express.Router();
 
@@ -217,4 +219,4 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-export default router;
+module.exports = router;

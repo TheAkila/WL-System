@@ -1,10 +1,10 @@
-import timerService from '../services/timerService.js';
-import { AppError } from '../middleware/errorHandler.js';
+const timerService = require('../services/timerService.js');
+const { AppError } = require('../middleware/errorHandler.js');
 
 /**
  * Get current timer state for a session
  */
-export const getTimerState = async (req, res, next) => {
+const getTimerState = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const timer = timerService.getTimerState(sessionId);
@@ -21,7 +21,7 @@ export const getTimerState = async (req, res, next) => {
 /**
  * Start timer for a session
  */
-export const startTimer = async (req, res, next) => {
+const startTimer = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { duration, mode } = req.body; // optional: duration and mode
@@ -42,7 +42,7 @@ export const startTimer = async (req, res, next) => {
 /**
  * Pause timer for a session
  */
-export const pauseTimer = async (req, res, next) => {
+const pauseTimer = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
 
@@ -62,7 +62,7 @@ export const pauseTimer = async (req, res, next) => {
 /**
  * Reset timer for a session
  */
-export const resetTimer = async (req, res, next) => {
+const resetTimer = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { duration, mode } = req.body; // optional: duration and mode
@@ -83,7 +83,7 @@ export const resetTimer = async (req, res, next) => {
 /**
  * Set timer to a preset duration
  */
-export const setPreset = async (req, res, next) => {
+const setPreset = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { preset } = req.body; // FIRST_ATTEMPT, SUBSEQUENT_ATTEMPT, BREAK, JURY_DECISION, etc.
@@ -104,3 +104,4 @@ export const setPreset = async (req, res, next) => {
     next(error);
   }
 };
+module.exports = { getTimerState,startTimer,pauseTimer,resetTimer,setPreset };

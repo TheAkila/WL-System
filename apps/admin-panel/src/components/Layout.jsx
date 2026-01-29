@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Trophy, Users, Calendar, Monitor, LogOut, Moon, Sun, Flag, Scale, Shield, Settings, Menu, X } from 'lucide-react';
+import { Home, Trophy, Users, Calendar, Monitor, LogOut, Moon, Sun, Flag, Scale, Shield, Settings, Menu, X, ClipboardList } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Layout() {
@@ -35,6 +35,7 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: <Home size={20} />, label: 'Dashboard' },
     { path: '/competitions', icon: <Trophy size={20} />, label: 'Competitions' },
+    { path: '/registrations', icon: <ClipboardList size={20} />, label: 'Registrations' },
     { path: '/sessions', icon: <Calendar size={20} />, label: 'Sessions' },
     { path: '/teams', icon: <Flag size={20} />, label: 'Teams' },
     { path: '/athletes', icon: <Users size={20} />, label: 'Athletes' },

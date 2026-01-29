@@ -15,6 +15,9 @@ export default function Competitions() {
     organizer: '',
     description: '',
     status: 'active',
+    registration_open: false,
+    preliminary_entry_open: false,
+    final_entry_open: false,
   });
 
   useEffect(() => {
@@ -38,6 +41,9 @@ export default function Competitions() {
           organizer: data.organizer || '',
           description: data.description || '',
           status: data.status || 'active',
+          registration_open: data.registration_open || false,
+          preliminary_entry_open: data.preliminary_entry_open || false,
+          final_entry_open: data.final_entry_open || false,
         });
       } else {
         // No competition exists, enable editing mode to create one
@@ -66,14 +72,22 @@ export default function Competitions() {
         name: formData.name,
         date: formData.date,
         location: formData.location,
+        registration_open: formData.registration_open,
+        preliminary_entry_open: formData.preliminary_entry_open,
+        final_entry_open: formData.final_entry_open,
         organizer: formData.organizer,
         description: formData.description,
         status: formData.status,
       };
 
+      console.log('Submitting competition data:', submitData);
+      console.log('Has existing competition:', !!competition);
+
       if (competition) {
         // Update existing competition
-        await api.put('/competitions/current', submitData);
+        console.log('Sending PUT request to /competitions/current');
+        const response = await api.put('/competitions/current', submitData);
+        console.log('Update response:', response.data);
         toast.success('Competition updated successfully!');
       } else {
         // Initialize new competition
@@ -273,7 +287,83 @@ export default function Competitions() {
               </select>
             </div>
 
-            <div className="flex gap-4">
+            {/* Website Integration Settings */}
+            <div className="pt-6 border-t border-slate-200 dark:border-zinc-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Website Integration (Lifting Social)
+              </h3>
+              
+              {/* Registration Period */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-slate-900 dark:text-white">
+                      Enable Website Registration
+                    </label>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1">
+                      Allow users to register for this competition on the website
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.registration_open || false}
+                      onChange={(e) => setFormData({ ...formData, registration_open: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Preliminary Entry Period */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-slate-900 dark:text-white">
+                      Preliminary Entry Period Open
+                    </label>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1">
+                      Allow registered users to submit preliminary entries (entry totals)
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.preliminary_entry_open || false}
+                      onChange={(e) => setFormData({ ...formData, preliminary_entry_open: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Final Entry Period */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-slate-900 dark:text-white">
+                      Final Entry Period Open
+                    </label>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1">
+                      Allow users to submit final entries (openers, confirmed weight category)
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.final_entry_open || false}
+                      onChange={(e) => setFormData({ ...formData, final_entry_open: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-6">
               <button type="submit" className="btn btn-primary flex-1">
                 {competition ? 'Save Changes' : 'Create Competition'}
               </button>

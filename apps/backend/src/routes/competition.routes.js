@@ -1,13 +1,16 @@
-import express from 'express';
-import { body, param } from 'express-validator';
-import {
-  getCurrentCompetition,
-  updateCurrentCompetition,
-  initializeCompetition,
-  deleteCompetition,
-} from '../controllers/competition.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body, param
+} = require('express-validator');
+const {
+  getCurrentCompetition, updateCurrentCompetition, initializeCompetition, deleteCompetition,
+} = require('../controllers/competition.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -57,4 +60,4 @@ router.delete(
   deleteCompetition
 );
 
-export default router;
+module.exports = router;

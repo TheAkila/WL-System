@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "echo 'Backend ready for deployment'",
-  "env": {
-    "NODE_ENV": "production"
-  },
   "builds": [
     {
       "src": "src/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "src/**",
+        "zeroConfig": true
+      }
     }
   ],
   "routes": [
@@ -15,5 +15,8 @@
       "src": "/(.*)",
       "dest": "src/server.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

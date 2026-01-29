@@ -1,22 +1,16 @@
-import express from 'express';
-import { body, param } from 'express-validator';
-import {
-  getActiveSessions,
-  getSessionSheet,
-  getLiftingOrder,
-  declareAttempt,
-  recordRefereeDecision,
-  recordQuickDecision,
-  recordJuryOverride,
-  getCurrentAttempt,
-  getSessionLeaderboard,
-  updateSessionStatus,
-  changeCurrentLift,
-  updateAthleteMedal,
-  requestWeightChange,
-} from '../controllers/technical.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body, param
+} = require('express-validator');
+const {
+  getActiveSessions, getSessionSheet, getLiftingOrder, declareAttempt, recordRefereeDecision, recordQuickDecision, recordJuryOverride, getCurrentAttempt, getSessionLeaderboard, updateSessionStatus, changeCurrentLift, updateAthleteMedal, requestWeightChange,
+} = require('../controllers/technical.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -127,4 +121,4 @@ router.post(
   requestWeightChange
 );
 
-export default router;
+module.exports = router;

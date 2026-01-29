@@ -1,7 +1,7 @@
-import { supabase } from '../services/database.js';
-import { AppError } from '../middleware/errorHandler.js';
+const { supabase } = require('../services/database.js');
+const { AppError } = require('../middleware/errorHandler.js');
 
-export const getSessions = async (req, res, next) => {
+const getSessions = async (req, res, next) => {
   try {
     const { competitionId, status, limit = 50, offset = 0 } = req.query;
     
@@ -34,7 +34,7 @@ export const getSessions = async (req, res, next) => {
   }
 };
 
-export const getSession = async (req, res, next) => {
+const getSession = async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('sessions')
@@ -53,7 +53,7 @@ export const getSession = async (req, res, next) => {
   }
 };
 
-export const createSession = async (req, res, next) => {
+const createSession = async (req, res, next) => {
   try {
     // Auto-assign competition_id if not provided (single competition system)
     let sessionData = { ...req.body };
@@ -111,7 +111,7 @@ export const createSession = async (req, res, next) => {
   }
 };
 
-export const updateSession = async (req, res, next) => {
+const updateSession = async (req, res, next) => {
   try {
     console.log('📝 updateSession called:', { sessionId: req.params.id, body: req.body, userId: req.user?.id });
     
@@ -146,7 +146,7 @@ export const updateSession = async (req, res, next) => {
   }
 };
 
-export const deleteSession = async (req, res, next) => {
+const deleteSession = async (req, res, next) => {
   try {
     const { error } = await supabase
       .from('sessions')
@@ -164,7 +164,7 @@ export const deleteSession = async (req, res, next) => {
   }
 };
 
-export const startSession = async (req, res, next) => {
+const startSession = async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('sessions')
@@ -190,7 +190,7 @@ export const startSession = async (req, res, next) => {
   }
 };
 
-export const endSession = async (req, res, next) => {
+const endSession = async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('sessions')
@@ -216,7 +216,7 @@ export const endSession = async (req, res, next) => {
   }
 };
 
-export const clearSessionAttempts = async (req, res, next) => {
+const clearSessionAttempts = async (req, res, next) => {
   try {
     const sessionId = req.params.id;
 
@@ -253,7 +253,7 @@ export const clearSessionAttempts = async (req, res, next) => {
   }
 };
 
-export const getSessionAthletes = async (req, res, next) => {
+const getSessionAthletes = async (req, res, next) => {
   try {
     const { id } = req.params;
     
@@ -308,3 +308,4 @@ export const getSessionAthletes = async (req, res, next) => {
   }
 };
 
+module.exports = { getSessions,getSession,createSession,updateSession,deleteSession,startSession,endSession,clearSessionAttempts,getSessionAthletes };

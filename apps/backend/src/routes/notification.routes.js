@@ -1,12 +1,16 @@
-import express from 'express';
-import { body, param } from 'express-validator';
-import {
-  sendAnnouncement,
-  callAthlete,
-  sendNotification,
-} from '../controllers/notification.controller.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { validate } from '../middleware/validator.js';
+const express = require('express');
+const {
+  body, param
+} = require('express-validator');
+const {
+  sendAnnouncement, callAthlete, sendNotification,
+} = require('../controllers/notification.controller.js');
+const {
+  protect, authorize
+} = require('../middleware/auth.js');
+const {
+  validate
+} = require('../middleware/validator.js');
 
 const router = express.Router();
 
@@ -51,4 +55,4 @@ router.post(
   sendNotification
 );
 
-export default router;
+module.exports = router;

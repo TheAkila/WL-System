@@ -1,6 +1,8 @@
-import express from 'express';
-import * as liftingOrderService from '../services/liftingOrder.service.js';
-import { AppError } from '../middleware/errorHandler.js';
+const express = require('express');
+const liftingOrderService = require('../services/liftingOrder.service.js');
+const {
+  AppError
+} = require('../middleware/errorHandler.js');
 
 const router = express.Router();
 
@@ -101,4 +103,4 @@ router.get(
   }
 );
 
-export default router;
+module.exports = router;

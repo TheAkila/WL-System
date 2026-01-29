@@ -1,12 +1,12 @@
-import bcrypt from 'bcryptjs';
-import db from '../services/database.js';
-import logger from './logger.js';
+const bcrypt = require('bcryptjs');
+const db = require('../services/database.js');
+const logger = require('./logger.js');
 
 /**
  * Seed default users if they don't exist
  * This helps with initial setup and testing
  */
-export async function seedDefaultUsers() {
+module.exports.async function seedDefaultUsers() {
   try {
     logger.info('Checking for default users...');
 
@@ -19,21 +19,21 @@ export async function seedDefaultUsers() {
         email: 'admin@test.com',
         name: 'Admin User',
         role: 'admin',
-        password_hash: passwordHash,
+        password: passwordHash,
         is_active: true,
       },
       {
         email: 'tech@test.com',
         name: 'Technical Official',
         role: 'technical',
-        password_hash: passwordHash,
+        password: passwordHash,
         is_active: true,
       },
       {
         email: 'ref@test.com',
         name: 'Referee',
         role: 'referee',
-        password_hash: passwordHash,
+        password: passwordHash,
         is_active: true,
       },
     ];
@@ -41,7 +41,7 @@ export async function seedDefaultUsers() {
     // Check and create each user if they don't exist
     for (const user of defaultUsers) {
       const { data: existingUser, error: selectError } = await db.supabase
-        .from('users')
+        .from('wl_users')
         .select('id')
         .eq('email', user.email)
         .single();
@@ -49,7 +49,7 @@ export async function seedDefaultUsers() {
       if (selectError?.code === 'PGRST116') {
         // User doesn't exist, create it
         const { error: insertError, data: newUser } = await db.supabase
-          .from('users')
+          .from('wl_users')
           .insert([user])
           .select();
 
@@ -71,4 +71,4 @@ export async function seedDefaultUsers() {
   }
 }
 
-export default seedDefaultUsers;
+module.exports = seedDefaultUsers;

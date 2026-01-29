@@ -1,16 +1,15 @@
-import PDFDocument from 'pdfkit';
-import { createObjectCsvWriter } from 'csv-writer';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const PDFDocument = require('pdfkit');
+const { createObjectCsvWriter } = require('csv-writer');
+const { promises: fs } = require('fs');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get __dirname in CommonJS
+const __dirname = path.dirname(require.main?.filename || process.cwd());
 
 /**
  * Generate PDF protocol sheet for session results
  */
-export const generateProtocolPDF = async (session, athletes, leaderboard) => {
+const generateProtocolPDF = async (session, athletes, leaderboard) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -96,7 +95,7 @@ export const generateProtocolPDF = async (session, athletes, leaderboard) => {
 /**
  * Generate CSV export for leaderboard
  */
-export const generateLeaderboardCSV = async (leaderboard, _sessionName) => {
+const generateLeaderboardCSV = async (leaderboard, _sessionName) => {
   const tempDir = path.join(__dirname, '../../temp');
   
   // Ensure temp directory exists
@@ -133,7 +132,7 @@ export const generateLeaderboardCSV = async (leaderboard, _sessionName) => {
 /**
  * Generate CSV start list
  */
-export const generateStartListCSV = async (athletes, _sessionName) => {
+const generateStartListCSV = async (athletes, _sessionName) => {
   const tempDir = path.join(__dirname, '../../temp');
   
   try {
@@ -177,7 +176,7 @@ export const generateStartListCSV = async (athletes, _sessionName) => {
 /**
  * Clean up temporary file
  */
-export const cleanupTempFile = async (filepath) => {
+const cleanupTempFile = async (filepath) => {
   try {
     await fs.unlink(filepath);
   } catch (err) {
