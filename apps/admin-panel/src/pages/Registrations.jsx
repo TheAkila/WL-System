@@ -24,8 +24,10 @@ const STATUS_COLORS = {
   registered: 'bg-green-100 text-green-800',
   preliminary_pending: 'bg-yellow-100 text-yellow-800',
   preliminary_approved: 'bg-blue-100 text-blue-800',
+  preliminary_declined: 'bg-red-100 text-red-800',
   final_pending: 'bg-orange-100 text-orange-800',
   final_approved: 'bg-green-100 text-green-800',
+  final_declined: 'bg-red-100 text-red-800',
   confirmed: 'bg-emerald-100 text-emerald-800',
   weighed_in: 'bg-purple-100 text-purple-800',
   withdrawn: 'bg-red-100 text-red-800',
@@ -37,8 +39,10 @@ const STATUS_LABELS = {
   registered: 'Registered',
   preliminary_pending: 'Preliminary Pending',
   preliminary_approved: 'Preliminary Approved',
+  preliminary_declined: 'Preliminary Declined',
   final_pending: 'Final Pending',
   final_approved: 'Final Approved',
+  final_declined: 'Final Declined',
   confirmed: 'Confirmed',
   weighed_in: 'Weighed In',
   withdrawn: 'Withdrawn',
@@ -824,16 +828,28 @@ export default function Registrations() {
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
               {selectedPreliminaryReg.status === 'preliminary_pending' && (
-                <button
-                  onClick={() => {
-                    updateStatus(selectedPreliminaryReg.id, 'preliminary_approved');
-                    setShowPreliminaryModal(false);
-                    setSelectedPreliminaryReg(null);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
-                >
-                  Approve Entry
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedPreliminaryReg.id, 'preliminary_declined');
+                      setShowPreliminaryModal(false);
+                      setSelectedPreliminaryReg(null);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                  >
+                    Decline Entry
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedPreliminaryReg.id, 'preliminary_approved');
+                      setShowPreliminaryModal(false);
+                      setSelectedPreliminaryReg(null);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                  >
+                    Approve Entry
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {
@@ -1002,16 +1018,28 @@ export default function Registrations() {
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
               {selectedFinalReg.status === 'final_pending' && (
-                <button
-                  onClick={() => {
-                    updateStatus(selectedFinalReg.id, 'final_approved');
-                    setShowFinalModal(false);
-                    setSelectedFinalReg(null);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
-                >
-                  Approve Entry
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedFinalReg.id, 'final_declined');
+                      setShowFinalModal(false);
+                      setSelectedFinalReg(null);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                  >
+                    Decline Entry
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateStatus(selectedFinalReg.id, 'final_approved');
+                      setShowFinalModal(false);
+                      setSelectedFinalReg(null);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                  >
+                    Approve Entry
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {
