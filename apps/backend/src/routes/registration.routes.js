@@ -22,11 +22,19 @@ router.get('/:competitionId/registrations', protect, async (req, res) => {
     
     // Get all preliminary athletes for these registrations
     const registrationIds = (registrations || []).map(r => r.id);
-    const { data: preliminaryAthletes } = await supabase
+    console.log(`Fetching preliminary athletes for ${registrationIds.length} registrations`);
+    
+    const { data: preliminaryAthletes, error: athletesError } = await supabase
       .from('preliminary_entry_athletes')
       .select('*')
       .in('registration_id', registrationIds)
       .order('competitor_number', { ascending: true });
+    
+    if (athletesError) {
+      console.error('Error fetching preliminary athletes:', athletesError);
+    } else {
+      console.log(`✅ Found ${preliminaryAthletes?.length || 0} preliminary athletes`);
+    }
     
     // Group athletes by registration_id
     const athletesByRegistration = {};
@@ -36,6 +44,8 @@ router.get('/:competitionId/registrations', protect, async (req, res) => {
       }
       athletesByRegistration[athlete.registration_id].push(athlete);
     });
+    
+    console.log('Athletes grouped by registration:', Object.keys(athletesByRegistration).length, 'registrations have athletes');
     
     // Transform data for admin panel
     const transformed = (registrations || []).map(reg => ({
