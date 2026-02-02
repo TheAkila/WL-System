@@ -22,7 +22,7 @@ export const googleCallback = async (req, res, next) => {
 
     // Check if user exists
     let { data: user, error } = await db.supabase
-      .from('users')
+      .from('wl_users')
       .select('*')
       .eq('email', email)
       .single();
@@ -30,7 +30,7 @@ export const googleCallback = async (req, res, next) => {
     // If user doesn't exist, create new account
     if (!user) {
       const { data: newUser, error: createError } = await db.supabase
-        .from('users')
+        .from('wl_users')
         .insert([
           {
             email,
@@ -39,7 +39,7 @@ export const googleCallback = async (req, res, next) => {
             google_id: googleId,
             role: 'user',
             is_active: true,
-            // For Google auth, we don't need password_hash
+            // For Google auth, we don't need password
           },
         ])
         .select()
@@ -53,7 +53,7 @@ export const googleCallback = async (req, res, next) => {
     } else if (!user.google_id) {
       // Update existing user with Google ID and avatar if not already set
       const { data: updatedUser, error: updateError } = await db.supabase
-        .from('users')
+        .from('wl_users')
         .update({
           google_id: googleId,
           avatar: picture || user.avatar,

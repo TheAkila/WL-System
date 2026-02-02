@@ -20,7 +20,7 @@ export const protect = async (req, res, next) => {
       
       // Get user from database
       const { data: user, error } = await db.supabase
-        .from('users')
+        .from('wl_users')
         .select('*')
         .eq('id', decoded.id)
         .single();

@@ -14,6 +14,7 @@ import resultsRoutes from './results.routes.js';
 import liftingOrderRoutes from './liftingOrder.routes.js';
 import weightChangeRoutes from './weightChange.routes.js';
 import sheetRoutes from './sheet.routes.js';
+import registrationRoutes from './registration.routes.js';
 
 // Export routes disabled on Vercel due to pdfkit compatibility
 let exportRoutes = null;
@@ -46,6 +47,10 @@ export const setupRoutes = (app) => {
   app.use('/api/sessions', liftingOrderRoutes);
   app.use('/api/weight-changes', weightChangeRoutes);
   app.use('/api/technical', sheetRoutes);
+  app.use('/api/competitions', registrationRoutes);
+  
+  // Standalone registration routes (without competition prefix)
+  app.use('/api/registrations', registrationRoutes);
 
   // 404 handler
   app.use('*', (req, res) => {

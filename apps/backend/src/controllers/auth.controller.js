@@ -23,7 +23,7 @@ export const login = async (req, res, next) => {
 
     // Get user from database
     const { data: user, error } = await db.supabase
-      .from('users')
+      .from('wl_users')
       .select('*')
       .eq('email', email)
       .single();
@@ -39,12 +39,12 @@ export const login = async (req, res, next) => {
     // Verify password
     let validPassword = false;
     
-    if (user.password_hash) {
+    if (user.password) {
       // Production: Use bcrypt to verify password hash
-      validPassword = await bcrypt.compare(password, user.password_hash);
+      validPassword = await bcrypt.compare(password, user.password);
     } else {
       // Development: Simple password check (TEMPORARY - for demo only!)
-      // In production, all users must have password_hash
+      // In production, all users must have password
       validPassword = password === 'password123';
     }
 
@@ -78,7 +78,7 @@ export const login = async (req, res, next) => {
 export const getMe = async (req, res, next) => {
   try {
     const { data: user, error } = await db.supabase
-      .from('users')
+      .from('wl_users')
       .select('*')
       .eq('id', req.user.id)
       .single();
@@ -128,7 +128,7 @@ export const signup = async (req, res, next) => {
         {
           email,
           name,
-          password_hash: passwordHash,
+          password: passwordHash,
           role: 'user',
           is_active: true,
         },
