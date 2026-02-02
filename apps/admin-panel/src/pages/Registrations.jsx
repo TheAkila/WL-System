@@ -74,6 +74,10 @@ export default function Registrations() {
   // Modal for viewing preliminary entry form
   const [showPreliminaryModal, setShowPreliminaryModal] = useState(false);
   const [selectedPreliminaryReg, setSelectedPreliminaryReg] = useState(null);
+  
+  // Modal for viewing final entry form
+  const [showFinalModal, setShowFinalModal] = useState(false);
+  const [selectedFinalReg, setSelectedFinalReg] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -632,7 +636,16 @@ export default function Registrations() {
                       </tr>
                     ) : (
                       currentSectionRegistrations.map((reg) => (
-                        <FinalEntryRow key={reg.id} reg={reg} updateStatus={updateStatus} deleteRegistration={deleteRegistration} createAthlete={createAthlete} STATUS_COLORS={STATUS_COLORS} STATUS_LABELS={STATUS_LABELS} />
+                        <FinalEntryRow 
+                          key={reg.id} 
+                          reg={reg} 
+                          updateStatus={updateStatus} 
+                          deleteRegistration={deleteRegistration} 
+                          createAthlete={createAthlete} 
+                          onView={() => { setSelectedFinalReg(reg); setShowFinalModal(true); }}
+                          STATUS_COLORS={STATUS_COLORS} 
+                          STATUS_LABELS={STATUS_LABELS} 
+                        />
                       ))
                     )}
                   </tbody>
@@ -835,11 +848,187 @@ export default function Registrations() {
           </div>
         </div>
       )}
+
+      {/* Final Entry Form Modal */}
+      {showFinalModal && selectedFinalReg && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-zinc-700 sticky top-0 bg-white dark:bg-zinc-800 z-10">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">ENTRY FORM (Final)</h2>
+                <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1">{competition?.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFinalModal(false);
+                  setSelectedFinalReg(null);
+                }}
+                className="text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Club/Team Information Section */}
+              <div className="bg-slate-50 dark:bg-zinc-700 rounded-lg p-6 mb-6">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg">Team Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Name of the Club/Institute/School:</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">
+                      {selectedFinalReg.club_name || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Men / Women:</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white capitalize">
+                      {selectedFinalReg.gender || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Age Category:</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">
+                      {selectedFinalReg.age_category || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Telephone No:</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">
+                      {selectedFinalReg.team_manager_phone || '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Athletes/Competitors Table with Opening Attempts */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg">Competitors & Opening Attempts</h3>
+                {!selectedFinalReg.final_submitted_at ? (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 text-center">
+                    <ClipboardList size={48} className="mx-auto text-amber-600 dark:text-amber-400 mb-3 opacity-50" />
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                      Final Entry Not Yet Submitted
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      The team has not submitted their final entry with opening attempts yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200 dark:border-zinc-700 rounded-lg">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 dark:bg-zinc-900">
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C/NO.</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">CATEGORY</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BODYWEIGHT</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">SNATCH OPENER</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C&J OPENER</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-zinc-800">
+                        {(() => {
+                          const athletes = selectedFinalReg.preliminary_athletes || [];
+                          
+                          if (athletes.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan="7" className="px-6 py-8 text-center">
+                                  <p className="text-slate-700 dark:text-zinc-300 font-medium">
+                                    No athlete details found for this final entry.
+                                  </p>
+                                </td>
+                              </tr>
+                            );
+                          }
+                          
+                          return athletes.map((athlete) => (
+                            <tr key={athlete.id} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-center font-medium text-slate-900 dark:text-white">
+                                {String(athlete.competitor_number || 0).padStart(2, '0')}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-semibold text-slate-900 dark:text-white">
+                                {athlete.weight_category ? `${athlete.weight_category}kg` : '-'}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-900 dark:text-white">
+                                {athlete.name || '-'}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
+                                {athlete.best_total ? `${athlete.best_total}kg` : '-'}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
+                                {athlete.bodyweight ? `${athlete.bodyweight}kg` : '-'}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-blue-600 dark:text-blue-400">
+                                {athlete.snatch_opener ? `${athlete.snatch_opener}kg` : '-'}
+                              </td>
+                              <td className="px-3 py-3 text-sm font-bold text-green-600 dark:text-green-400">
+                                {athlete.cnj_opener ? `${athlete.cnj_opener}kg` : '-'}
+                              </td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Status and Submission Info */}
+              <div className="bg-slate-50 dark:bg-zinc-700 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Status</p>
+                    <span className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold ${STATUS_COLORS[selectedFinalReg.status] || 'bg-gray-100 text-gray-800'}`}>
+                      {STATUS_LABELS[selectedFinalReg.status] || selectedFinalReg.status}
+                    </span>
+                  </div>
+                  {selectedFinalReg.final_submitted_at && (
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Submitted At</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {new Date(selectedFinalReg.final_submitted_at).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
+              {selectedFinalReg.status === 'final_pending' && (
+                <button
+                  onClick={() => {
+                    updateStatus(selectedFinalReg.id, 'final_approved');
+                    setShowFinalModal(false);
+                    setSelectedFinalReg(null);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                >
+                  Approve Entry
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setShowFinalModal(false);
+                  setSelectedFinalReg(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-// Registration Row Component
 function RegistrationRow({ reg, selectedIds, toggleSelection, updateStatus, deleteRegistration, STATUS_COLORS, STATUS_LABELS, createAthlete }) {
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors">
@@ -996,7 +1185,7 @@ function PreliminaryEntryRow({ reg, updateStatus, deleteRegistration, STATUS_COL
 }
 
 // Final Entry Row Component
-function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, STATUS_COLORS, STATUS_LABELS }) {
+function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, onView, STATUS_COLORS, STATUS_LABELS }) {
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors">
       {/* Team Name */}
@@ -1049,6 +1238,13 @@ function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, S
       {/* Actions */}
       <td className="px-6 py-4">
         <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={onView}
+            className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors shadow-sm"
+            title="View Final Entry Form"
+          >
+            <FileText size={20} />
+          </button>
           {reg.status === 'final_pending' && (
             <button
               onClick={() => updateStatus(reg.id, 'final_approved')}
