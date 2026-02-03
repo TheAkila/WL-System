@@ -940,10 +940,7 @@ export default function Registrations() {
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C/NO.</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">CATEGORY</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME</th>
-                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
-                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BODYWEIGHT</th>
-                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">SNATCH OPENER</th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C&J OPENER</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-zinc-800">
@@ -953,7 +950,7 @@ export default function Registrations() {
                           if (athletes.length === 0) {
                             return (
                               <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center">
+                                <td colSpan="4" className="px-6 py-8 text-center">
                                   <p className="text-slate-700 dark:text-zinc-300 font-medium">
                                     No athlete details found for this final entry.
                                   </p>
@@ -973,17 +970,8 @@ export default function Registrations() {
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-900 dark:text-white">
                                 {athlete.name || '-'}
                               </td>
-                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
+                              <td className="px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
                                 {athlete.best_total ? `${athlete.best_total}kg` : '-'}
-                              </td>
-                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
-                                {athlete.bodyweight ? `${athlete.bodyweight}kg` : '-'}
-                              </td>
-                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-blue-600 dark:text-blue-400">
-                                {athlete.snatch_opener ? `${athlete.snatch_opener}kg` : '-'}
-                              </td>
-                              <td className="px-3 py-3 text-sm font-bold text-green-600 dark:text-green-400">
-                                {athlete.cnj_opener ? `${athlete.cnj_opener}kg` : '-'}
                               </td>
                             </tr>
                           ));
