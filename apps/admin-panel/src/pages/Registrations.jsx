@@ -712,7 +712,7 @@ export default function Registrations() {
                   <div>
                     <p className="text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Address:</p>
                     <p className="text-base font-semibold text-slate-900 dark:text-white">
-                      -
+                      {selectedPreliminaryReg.athlete_notes || '-'}
                     </p>
                   </div>
                   <div>
