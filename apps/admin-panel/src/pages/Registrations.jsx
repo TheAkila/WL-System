@@ -257,16 +257,16 @@ export default function Registrations() {
     if (section === 'registrations') {
       // Show all registrations including those that have moved to preliminary/final stages
       sectionRegs = registrations.filter(reg => 
-        ['pending', 'registered', 'preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_rejected',
-         'final_pending', 'final_submitted', 'final_approved', 'final_rejected'].includes(reg.status)
+        ['pending', 'registered', 'preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_declined',
+         'final_pending', 'final_submitted', 'final_approved', 'final_declined'].includes(reg.status)
       );
     } else if (section === 'preliminary') {
       sectionRegs = registrations.filter(reg => 
-        ['preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_rejected'].includes(reg.status)
+        ['preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_declined'].includes(reg.status)
       );
     } else if (section === 'final') {
       sectionRegs = registrations.filter(reg => 
-        ['final_pending', 'final_submitted', 'final_approved', 'final_rejected'].includes(reg.status)
+        ['final_pending', 'final_submitted', 'final_approved', 'final_declined'].includes(reg.status)
       );
     }
 
