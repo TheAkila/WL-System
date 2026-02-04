@@ -14,6 +14,7 @@ import WeighIn from './pages/WeighIn';
 import UserManagement from './pages/UserManagement';
 import SystemSettings from './pages/SystemSettings';
 import Registrations from './pages/Registrations';
+import Orders from './pages/Orders';
 import Layout from './components/Layout';
 
 const router = createBrowserRouter(
@@ -53,6 +54,10 @@ const router = createBrowserRouter(
         {
           path: 'registrations',
           element: <Registrations />,
+        },
+        {
+          path: 'orders',
+          element: <Orders />,
         },
         {
           path: 'sessions',
