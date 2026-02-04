@@ -89,6 +89,12 @@ router.get('/:competitionId/registrations', protect, async (req, res) => {
       preliminary_athletes: athletesByRegistration[reg.id] || []
     }));
     
+    console.log(`📊 Returning ${transformed.length} registrations`);
+    console.log('Status breakdown:', transformed.reduce((acc, r) => {
+      acc[r.status] = (acc[r.status] || 0) + 1;
+      return acc;
+    }, {}));
+    
     res.json({ success: true, data: transformed });
   } catch (error) {
     console.error('Error fetching registrations:', error);
