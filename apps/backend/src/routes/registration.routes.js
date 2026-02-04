@@ -141,8 +141,33 @@ router.get('/:competitionId/registrations/stats', protect, async (req, res) => {
 // Update registration status
 router.put('/:competitionId/registrations/:registrationId', protect, authorize('admin', 'technical'), async (req, res) => {
   try {
-    const { registrationId } = req.params;
+    const { registrationId, competitionId } = req.params;
     const updates = req.body;
+    
+    console.log('📝 Updating registration status:', {
+      registrationId,
+      competitionId,
+      newStatus: updates.status,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Fetch current registration before update
+    const { data: currentReg, error: fetchError } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('id', registrationId)
+      .single();
+    
+    if (fetchError || !currentReg) {
+      console.error('❌ Registration not found:', registrationId);
+      return res.status(404).json({ success: false, error: { message: 'Registration not found' } });
+    }
+    
+    console.log('✅ Registration found:', {
+      id: currentReg.id,
+      currentStatus: currentReg.status,
+      newStatus: updates.status
+    });
     
     const { data, error } = await supabase
       .from('event_registrations')
@@ -151,11 +176,20 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error updating registration:', error);
+      throw error;
+    }
+    
+    console.log('✅ Registration status updated successfully:', {
+      id: data.id,
+      status: data.status,
+      timestamp: new Date().toISOString()
+    });
     
     res.json({ success: true, data });
   } catch (error) {
-    console.error('Error updating registration:', error);
+    console.error('❌ Error updating registration:', error);
     res.status(500).json({ success: false, error: { message: error.message } });
   }
 });
