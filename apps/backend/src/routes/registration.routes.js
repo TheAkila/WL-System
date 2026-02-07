@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../config/supabase.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { sendEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -165,26 +166,75 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
       .single();
     
     if (fetchError || !currentReg) {
-      console.error('❌ Registration not found:', registrationId);
+      console.error('❌ Registration not found:', registrationId, fetchError);
       return res.status(404).json({ success: false, error: { message: 'Registration not found' } });
     }
     
     console.log('✅ Registration found:', {
       id: currentReg.id,
       currentStatus: currentReg.status,
-      newStatus: updates.status
+      newStatus: updates.status,
+      userId: currentReg.user_id,
+      competitionId: currentReg.competition_id
     });
     
-    const { data, error } = await supabase
-      .from('event_registrations')
-      .update(updates)
-      .eq('id', registrationId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ Error updating registration:', error);
-      throw error;
+    // Handle decline operations differently - clear data and reset status
+    let data;
+    if (updates.status === 'preliminary_declined') {
+      // Clear preliminary data and reset to registered
+      const { data: updatedData, error: updateError } = await supabase
+        .from('event_registrations')
+        .update({
+          status: 'registered',
+          entry_total: null,
+          best_snatch: null,
+          best_clean_jerk: null,
+          preliminary_submitted_at: null,
+          preliminary_approved_at: null
+        })
+        .eq('id', registrationId)
+        .select()
+        .single();
+      
+      if (updateError) throw updateError;
+      data = updatedData;
+      
+      // Delete preliminary athletes
+      await supabase
+        .from('preliminary_entry_athletes')
+        .delete()
+        .eq('registration_id', registrationId);
+        
+      console.log('✅ Preliminary entry cleared, status reset to registered');
+    } else if (updates.status === 'final_declined') {
+      // Clear final data and reset to preliminary_approved
+      const { data: updatedData, error: updateError } = await supabase
+        .from('event_registrations')
+        .update({
+          status: 'preliminary_approved',
+          snatch_opener: null,
+          cnj_opener: null,
+          final_submitted_at: null,
+          final_approved_at: null
+        })
+        .eq('id', registrationId)
+        .select()
+        .single();
+      
+      if (updateError) throw updateError;
+      data = updatedData;
+      console.log('✅ Final entry cleared, status reset to preliminary_approved');
+    } else {
+      // Normal status update
+      const { data: updatedData, error: updateError } = await supabase
+        .from('event_registrations')
+        .update(updates)
+        .eq('id', registrationId)
+        .select()
+        .single();
+      
+      if (updateError) throw updateError;
+      data = updatedData;
     }
     
     console.log('✅ Registration status updated successfully:', {
@@ -192,6 +242,123 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
       status: data.status,
       timestamp: new Date().toISOString()
     });
+    
+    // Send email notifications - fetch user and competition data separately
+    if (currentReg.user_id && currentReg.competition_id) {
+      try {
+        // Fetch user data
+        const { data: user } = await supabase
+          .from('website_users')
+          .select('id, email, name')
+          .eq('id', currentReg.user_id)
+          .single();
+        
+        // Fetch competition data
+        const { data: competition } = await supabase
+          .from('competitions')
+          .select('id, name, date, location, preliminary_entry_open, preliminary_entry_start, final_entry_open, final_entry_start')
+          .eq('id', currentReg.competition_id)
+          .single();
+        
+        if (user?.email && competition) {
+          const userEmail = user.email;
+          const athleteName = user.name || currentReg.athlete_name || 'Athlete';
+          const competitionName = competition.name;
+          const competitionDate = new Date(competition.date).toLocaleDateString('en-US', { 
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+          });
+          
+          // Dynamically import email service
+          const { default: sendCompetitionEmail } = await import('../services/competitionEmailService.js');
+          
+          console.log('📧 Checking email notification conditions...');
+          console.log('Current status:', currentReg.status, '→ New status:', updates.status);
+          
+          // Registration approved
+          if (updates.status === 'registered' && currentReg.status === 'pending') {
+            console.log('📧 Sending registration approval email...');
+            const preliminaryStartDate = competition.preliminary_entry_start 
+              ? new Date(competition.preliminary_entry_start).toLocaleDateString('en-US', { 
+                  month: 'long', day: 'numeric', year: 'numeric' 
+                })
+              : undefined;
+              
+            await sendCompetitionEmail.sendRegistrationApproval({
+              userEmail,
+              athleteName,
+              competitionName,
+              competitionDate,
+              preliminaryEntryOpen: competition.preliminary_entry_open || false,
+              preliminaryStartDate
+            });
+            console.log('✅ Registration approval email sent to:', userEmail);
+          }
+          
+          // Preliminary entry approved
+          else if (updates.status === 'preliminary_approved' && currentReg.status === 'preliminary_pending') {
+            console.log('📧 Sending preliminary approval email...');
+            const finalStartDate = competition.final_entry_start 
+              ? new Date(competition.final_entry_start).toLocaleDateString('en-US', { 
+                  month: 'long', day: 'numeric', year: 'numeric' 
+                })
+              : undefined;
+              
+            await sendCompetitionEmail.sendPreliminaryApproval({
+              userEmail,
+              athleteName,
+              competitionName,
+              entryTotal: data.entry_total || currentReg.entry_total || 0,
+              finalEntryOpen: competition.final_entry_open || false,
+              finalStartDate
+            });
+            console.log('✅ Preliminary approval email sent to:', userEmail);
+          }
+          
+          // Preliminary declined - send email (data already cleared above)
+          else if (updates.status === 'preliminary_declined') {
+            console.log('📧 Sending preliminary declined email...');
+            await sendCompetitionEmail.sendEntryDeclined({
+              userEmail,
+              athleteName,
+              competitionName,
+              entryType: 'preliminary',
+              reason: updates.admin_notes,
+              canResubmit: true
+            });
+            console.log('✅ Preliminary declined email sent to:', userEmail);
+          }
+          
+          // Final entry approved
+          else if (updates.status === 'final_approved' && currentReg.status === 'final_pending') {
+            console.log('📧 Sending final entry approval email...');
+            await sendCompetitionEmail.sendFinalEntryApproval({
+              userEmail,
+              athleteName,
+              competitionName,
+              competitionDate
+            });
+            console.log('✅ Final entry approval email sent to:', userEmail);
+          }
+          
+          // Final declined - send email (data already cleared above)
+          else if (updates.status === 'final_declined') {
+            console.log('📧 Sending final declined email...');
+            await sendCompetitionEmail.sendEntryDeclined({
+              userEmail,
+              athleteName,
+              competitionName,
+              entryType: 'final',
+              reason: updates.admin_notes,
+              canResubmit: true
+            });
+            console.log('✅ Final declined email sent to:', userEmail);
+          }
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send email notification:', emailError);
+        // Don't fail the status update if email fails
+      }
+    }
     
     res.json({ success: true, data });
   } catch (error) {
@@ -346,6 +513,55 @@ router.put('/:competitionId/preliminary-entry', protect, authorize('admin'), asy
       .single();
     
     if (error) throw error;
+
+    // Send emails to all approved registrations (registered, preliminary_pending, or preliminary_approved)
+    try {
+      console.log(`Fetching registrations for competition ${competitionId} with eligible statuses`);
+      const { data: approvedRegistrations, error: fetchError } = await supabase
+        .from('event_registrations')
+        .select('*, website_users(name, email)')
+        .eq('competition_id', competitionId)
+        .in('status', ['registered', 'preliminary_pending', 'preliminary_approved']);
+
+      if (fetchError) {
+        console.error('Error fetching registrations:', fetchError);
+      } else {
+        console.log(`Found ${approvedRegistrations?.length || 0} registrations with statuses: ${approvedRegistrations?.map(r => r.status).join(', ')}`);
+      }
+
+      if (approvedRegistrations && approvedRegistrations.length > 0) {
+        console.log(`Sending ${open ? 'opened' : 'closed'} emails to ${approvedRegistrations.length} users`);
+        const emailPromises = approvedRegistrations.map(reg => {
+          const html = open 
+            ? getPreliminaryOpenedEmail({
+                athleteName: reg.website_users?.name || 'Athlete',
+                competitionName: data.name,
+                dashboardUrl: `${process.env.FRONTEND_URL || 'https://www.theliftingsocial.com'}/dashboard`
+              })
+            : getPreliminaryClosedEmail({
+                athleteName: reg.website_users?.name || 'Athlete',
+                competitionName: data.name,
+                dashboardUrl: `${process.env.FRONTEND_URL || 'https://www.theliftingsocial.com'}/dashboard`
+              });
+
+          return sendEmail({
+            to: reg.website_users?.email,
+            subject: open 
+              ? `❗️Preliminary Entry Period is OPEN - ${data.name}`
+              : `❗️Preliminary Entry Period is CLOSED - ${data.name}`,
+            html
+          });
+        });
+
+        await Promise.all(emailPromises);
+        console.log(`✅ Sent preliminary entry ${open ? 'opened' : 'closed'} emails to ${emailPromises.length} users`);
+      } else {
+        console.log('⚠️ No registrations found to email');
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending emails:', emailError);
+      // Don't fail the API call if email sending fails
+    }
     
     res.json({ success: true, data });
   } catch (error) {
@@ -367,6 +583,55 @@ router.put('/:competitionId/final-entry', protect, authorize('admin'), async (re
       .single();
     
     if (error) throw error;
+
+    // Send emails to all preliminary approved registrations
+    try {
+      console.log(`Fetching registrations for competition ${competitionId} with status 'preliminary_approved'`);
+      const { data: preliminaryApprovedRegistrations, error: fetchError } = await supabase
+        .from('event_registrations')
+        .select('*, website_users(name, email)')
+        .eq('competition_id', competitionId)
+        .eq('status', 'preliminary_approved');
+
+      if (fetchError) {
+        console.error('Error fetching registrations:', fetchError);
+      } else {
+        console.log(`Found ${preliminaryApprovedRegistrations?.length || 0} registrations`);
+      }
+
+      if (preliminaryApprovedRegistrations && preliminaryApprovedRegistrations.length > 0) {
+        console.log(`Sending ${open ? 'opened' : 'closed'} emails to ${preliminaryApprovedRegistrations.length} users`);
+        const emailPromises = preliminaryApprovedRegistrations.map(reg => {
+          const html = open 
+            ? getFinalOpenedEmail({
+                athleteName: reg.website_users?.name || 'Athlete',
+                competitionName: data.name,
+                dashboardUrl: `${process.env.FRONTEND_URL || 'https://www.theliftingsocial.com'}/dashboard`
+              })
+            : getFinalClosedEmail({
+                athleteName: reg.website_users?.name || 'Athlete',
+                competitionName: data.name,
+                dashboardUrl: `${process.env.FRONTEND_URL || 'https://www.theliftingsocial.com'}/dashboard`
+              });
+
+          return sendEmail({
+            to: reg.website_users?.email,
+            subject: open 
+              ? `❗️ Final Entry Period is OPEN - ${data.name}`
+              : `❗️Final Entry Period is CLOSED - ${data.name}`,
+            html
+          });
+        });
+
+        await Promise.all(emailPromises);
+        console.log(`✅ Sent final entry ${open ? 'opened' : 'closed'} emails to ${emailPromises.length} users`);
+      } else {
+        console.log('⚠️ No registrations found to email');
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending emails:', emailError);
+      // Don't fail the API call if email sending fails
+    }
     
     res.json({ success: true, data });
   } catch (error) {
@@ -473,6 +738,277 @@ router.post('/:competitionId/registrations/draw-lots', protect, authorize('admin
     res.json({ success: true, message: `Assigned lot numbers to ${shuffled.length} registrations` });
   } catch (error) {
     console.error('Error drawing lots:', error);
+    res.status(500).json({ success: false, error: { message: error.message } });
+  }
+});
+
+// ==================== EMAIL TEMPLATES ====================
+
+function getPreliminaryOpenedEmail(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px; color: #000000; font-size: 24px;">Preliminary Entry is NOW OPEN!</h2>
+                  <p style="margin: 0; color: #6b7280; font-size: 16px;">${data.competitionName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Hello ${data.athleteName},</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">The preliminary entry period for <strong>${data.competitionName}</strong> is now open!</p>
+
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <a href="${data.dashboardUrl}" style="display: inline-block; padding: 15px 40px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Submit Preliminary Entry</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">Lifting Social - Empowering Athletes</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+function getPreliminaryClosedEmail(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px; color: #000000; font-size: 24px;">Preliminary Entry Period Closed</h2>
+                  <p style="margin: 0; color: #6b7280; font-size: 16px;">${data.competitionName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Hello ${data.athleteName},</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">The preliminary entry period for <strong>${data.competitionName}</strong> has now closed.</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Wait for preliminary approval before proceeding to final entry.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <a href="${data.dashboardUrl}" style="display: inline-block; padding: 15px 40px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">View Dashboard</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">Lifting Social</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+function getFinalOpenedEmail(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px; color: #000000; font-size: 24px;">Final Entry is NOW OPEN!</h2>
+                  <p style="margin: 0; color: #6b7280; font-size: 16px;">${data.competitionName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Hello ${data.athleteName},</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">The final entry period for <strong>${data.competitionName}</strong> is now open!</p>
+
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <a href="${data.dashboardUrl}" style="display: inline-block; padding: 15px 40px; background-color: #8b5cf6; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Submit Final Entry</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">Lifting Social</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+function getFinalClosedEmail(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px; color: #000000; font-size: 24px;">Final Entry Period Closed</h2>
+                  <p style="margin: 0; color: #6b7280; font-size: 16px;">${data.competitionName}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Hello ${data.athleteName},</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">The final entry period for <strong>${data.competitionName}</strong> has now closed.</p>
+                  <p style="margin: 0 0 15px; color: #374151; font-size: 16px;">Your entries are locked in. Get ready for competition day!</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 0 30px 30px; text-align: center;">
+                  <a href="${data.dashboardUrl}" style="display: inline-block; padding: 15px 40px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">View Dashboard</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">Lifting Social</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+// Update preliminary athletes for a registration
+router.put('/:competitionId/registrations/:registrationId/preliminary-athletes', protect, authorize('admin'), async (req, res) => {
+  console.log('🎯 Preliminary athletes endpoint HIT!');
+  console.log('Competition ID:', req.params.competitionId);
+  console.log('Registration ID:', req.params.registrationId);
+  console.log('Body:', req.body);
+  
+  try {
+    const { registrationId } = req.params;
+    const { athletes } = req.body;
+
+    console.log('📝 Updating preliminary athletes for registration:', registrationId);
+    console.log('Athletes data:', JSON.stringify(athletes, null, 2));
+
+    // Delete existing preliminary athletes for this registration
+    const { error: deleteError } = await supabase
+      .from('preliminary_entry_athletes')
+      .delete()
+      .eq('registration_id', registrationId);
+
+    if (deleteError) {
+      console.error('Error deleting existing athletes:', deleteError);
+      throw deleteError;
+    }
+
+    console.log('✅ Deleted existing athletes');
+
+    // Insert new athletes
+    if (athletes && athletes.length > 0) {
+      const athletesToInsert = athletes.map(athlete => ({
+        registration_id: registrationId,
+        competitor_number: athlete.competitor_number ? parseInt(athlete.competitor_number) : null,
+        name: athlete.name,
+        weight_category: athlete.weight_category,
+        date_of_birth: athlete.date_of_birth || null,
+        id_number: athlete.id_number,
+        best_total: athlete.best_total ? parseInt(athlete.best_total) : null,
+        coach_name: athlete.coach_name
+      }));
+
+      console.log('Inserting athletes:', JSON.stringify(athletesToInsert, null, 2));
+
+      const { error } = await supabase
+        .from('preliminary_entry_athletes')
+        .insert(athletesToInsert);
+
+      if (error) {
+        console.error('Error inserting athletes:', error);
+        throw error;
+      }
+
+      console.log('✅ Successfully inserted', athletes.length, 'athletes');
+    }
+
+    res.json({ success: true, message: 'Preliminary athletes updated successfully' });
+  } catch (error) {
+    console.error('❌ Error updating preliminary athletes:', error);
+    res.status(500).json({ success: false, error: { message: error.message } });
+  }
+});
+
+// Update final athletes for a registration (opening attempts)
+router.put('/:competitionId/registrations/:registrationId/final-athletes', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { registrationId } = req.params;
+    const { athletes } = req.body;
+
+    // Update each athlete's opening attempts
+    if (athletes && athletes.length > 0) {
+      for (const athlete of athletes) {
+        if (athlete.id) {
+          await supabase
+            .from('preliminary_entry_athletes')
+            .update({
+              snatch_opener: athlete.snatch_opener,
+              cnj_opener: athlete.cnj_opener
+            })
+            .eq('id', athlete.id);
+        }
+      }
+    }
+
+    res.json({ success: true, message: 'Final athletes updated successfully' });
+  } catch (error) {
+    console.error('Error updating final athletes:', error);
     res.status(500).json({ success: false, error: { message: error.message } });
   }
 });

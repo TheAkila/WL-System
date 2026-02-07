@@ -78,10 +78,14 @@ export default function Registrations() {
   // Modal for viewing preliminary entry form
   const [showPreliminaryModal, setShowPreliminaryModal] = useState(false);
   const [selectedPreliminaryReg, setSelectedPreliminaryReg] = useState(null);
+  const [editingPreliminary, setEditingPreliminary] = useState(false);
+  const [preliminaryAthletes, setPreliminaryAthletes] = useState([]);
   
   // Modal for viewing final entry form
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [selectedFinalReg, setSelectedFinalReg] = useState(null);
+  const [editingFinal, setEditingFinal] = useState(false);
+  const [finalAthletes, setFinalAthletes] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -249,6 +253,96 @@ export default function Registrations() {
     }
   };
 
+  // Edit Preliminary Athletes
+  const handleEditPreliminary = (reg) => {
+    setSelectedPreliminaryReg(reg);
+    setPreliminaryAthletes(reg.preliminary_athletes || []);
+    setEditingPreliminary(true);
+    setShowPreliminaryModal(true);
+  };
+
+  const addPreliminaryAthlete = () => {
+    setPreliminaryAthletes([...preliminaryAthletes, {
+      id: Date.now(),
+      competitor_number: preliminaryAthletes.length + 1,
+      name: '',
+      weight_category: '',
+      date_of_birth: '',
+      id_number: '',
+      best_total: '',
+      coach_name: '',
+      isNew: true
+    }]);
+  };
+
+  const updatePreliminaryAthlete = (index, field, value) => {
+    const updated = [...preliminaryAthletes];
+    updated[index] = { ...updated[index], [field]: value };
+    setPreliminaryAthletes(updated);
+  };
+
+  const removePreliminaryAthlete = (index) => {
+    setPreliminaryAthletes(preliminaryAthletes.filter((_, i) => i !== index));
+  };
+
+  const savePreliminaryAthletes = async () => {
+    try {
+      console.log('🚀 STARTING SAVE PROCESS');
+      console.log('Saving preliminary athletes:', preliminaryAthletes);
+      console.log('Registration ID:', selectedPreliminaryReg.id);
+      console.log('Competition ID:', competition.id);
+      console.log('URL will be:', `/competitions/${competition.id}/registrations/${selectedPreliminaryReg.id}/preliminary-athletes`);
+      
+      const response = await api.put(`/competitions/${competition.id}/registrations/${selectedPreliminaryReg.id}/preliminary-athletes`, {
+        athletes: preliminaryAthletes
+      });
+      
+      console.log('✅ Save response:', response.data);
+      toast.success('Preliminary athletes updated successfully');
+      setEditingPreliminary(false);
+      
+      // Refresh data to show updated athletes
+      await fetchData();
+      
+      // Close modal after data is refreshed
+      setShowPreliminaryModal(false);
+      setSelectedPreliminaryReg(null);
+    } catch (error) {
+      console.error('❌ Save error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+      toast.error(error.response?.data?.error?.message || 'Failed to update preliminary athletes');
+    }
+  };
+
+  // Edit Final Athletes  
+  const handleEditFinal = (reg) => {
+    setSelectedFinalReg(reg);
+    setFinalAthletes(reg.preliminary_athletes || []);
+    setEditingFinal(true);
+    setShowFinalModal(true);
+  };
+
+  const updateFinalAthlete = (index, field, value) => {
+    const updated = [...finalAthletes];
+    updated[index] = { ...updated[index], [field]: value };
+    setFinalAthletes(updated);
+  };
+
+  const saveFinalAthletes = async () => {
+    try {
+      await api.put(`/competitions/${competition.id}/registrations/${selectedFinalReg.id}/final-athletes`, {
+        athletes: finalAthletes
+      });
+      toast.success('Final athletes updated successfully');
+      setEditingFinal(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update final athletes');
+    }
+  };
+
   // Filter registrations by section
   const getRegistrationsBySection = (section) => {
     const search = searchTerm.toLowerCase();
@@ -261,8 +355,10 @@ export default function Registrations() {
          'final_pending', 'final_submitted', 'final_approved', 'final_declined'].includes(reg.status)
       );
     } else if (section === 'preliminary') {
+      // Show preliminary entries including those that have moved to final stage
       sectionRegs = registrations.filter(reg => 
-        ['preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_declined'].includes(reg.status)
+        ['preliminary_pending', 'preliminary_submitted', 'preliminary_approved', 'preliminary_declined',
+         'final_pending', 'final_submitted', 'final_approved', 'final_declined'].includes(reg.status)
       );
     } else if (section === 'final') {
       sectionRegs = registrations.filter(reg => 
@@ -367,99 +463,65 @@ export default function Registrations() {
       {!selectedSection && (
         <>
           {/* Entry Period Controls */}
-          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Clock size={20} />
-              Entry Period Controls
-            </h2>
+          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow p-6 border border-slate-200 dark:border-zinc-700">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Entry Period Controls</h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Registration */}
-              <div className={`p-4 rounded-lg border-2 ${entryControls.registration_open ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Registration</h3>
-                    <p className="text-sm text-gray-500">Allow new registrations</p>
-                  </div>
-                  <button
-                    onClick={() => toggleEntryPeriod('registration', !entryControls.registration_open)}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      entryControls.registration_open 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
-                  >
-                    {entryControls.registration_open ? 'Close' : 'Open'}
-                  </button>
-                </div>
+              <div className="p-4 border border-slate-200 dark:border-zinc-700 rounded-lg">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Registration</h3>
+                <p className={`text-sm mb-3 font-medium ${entryControls.registration_open ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {entryControls.registration_open ? '✓ Open' : '✗ Closed'}
+                </p>
+                <button
+                  onClick={() => toggleEntryPeriod('registration', !entryControls.registration_open)}
+                  className={`w-full px-4 py-2.5 font-semibold rounded-lg transition-all text-white ${
+                    entryControls.registration_open 
+                      ? 'bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg' 
+                      : 'bg-green-500 hover:bg-green-600 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {entryControls.registration_open ? 'Close' : 'Open'}
+                </button>
               </div>
 
               {/* Preliminary Entry */}
-              <div className={`p-4 rounded-lg border-2 ${entryControls.preliminary_entry_open ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Preliminary Entry</h3>
-                    <p className="text-sm text-gray-500">Entry total submission</p>
-                  </div>
-                  <button
-                    onClick={() => toggleEntryPeriod('preliminary', !entryControls.preliminary_entry_open)}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      entryControls.preliminary_entry_open 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    }`}
-                  >
-                    {entryControls.preliminary_entry_open ? 'Close' : 'Open'}
-                  </button>
-                </div>
+              <div className="p-4 border border-slate-200 dark:border-zinc-700 rounded-lg">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Preliminary Entry</h3>
+                <p className={`text-sm mb-3 font-medium ${entryControls.preliminary_entry_open ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {entryControls.preliminary_entry_open ? '✓ Open' : '✗ Closed'}
+                </p>
+                <button
+                  onClick={() => toggleEntryPeriod('preliminary', !entryControls.preliminary_entry_open)}
+                  className={`w-full px-4 py-2.5 font-semibold rounded-lg transition-all text-white ${
+                    entryControls.preliminary_entry_open 
+                      ? 'bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg' 
+                      : 'bg-green-500 hover:bg-green-600 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {entryControls.preliminary_entry_open ? 'Close' : 'Open'}
+                </button>
               </div>
 
               {/* Final Entry */}
-              <div className={`p-4 rounded-lg border-2 ${entryControls.final_entry_open ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Final Entry</h3>
-                    <p className="text-sm text-gray-500">Opening attempts</p>
-                  </div>
-                  <button
-                    onClick={() => toggleEntryPeriod('final', !entryControls.final_entry_open)}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      entryControls.final_entry_open 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                    }`}
-                  >
-                    {entryControls.final_entry_open ? 'Close' : 'Open'}
-                  </button>
-                </div>
+              <div className="p-4 border border-slate-200 dark:border-zinc-700 rounded-lg">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Final Entry</h3>
+                <p className={`text-sm mb-3 font-medium ${entryControls.final_entry_open ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {entryControls.final_entry_open ? '✓ Open' : '✗ Closed'}
+                </p>
+                <button
+                  onClick={() => toggleEntryPeriod('final', !entryControls.final_entry_open)}
+                  className={`w-full px-4 py-2.5 font-semibold rounded-lg transition-all text-white ${
+                    entryControls.final_entry_open 
+                      ? 'bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg' 
+                      : 'bg-green-500 hover:bg-green-600 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {entryControls.final_entry_open ? 'Close' : 'Open'}
+                </button>
               </div>
             </div>
           </div>
-
-          {/* Stats Cards */}
-          {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-2.5">
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Total</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.total || registrations.length}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-2.5">
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Pending</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.pendingApproval || registrations.filter(r => r.status === 'pending').length}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-2.5">
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Approved</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.readyForCompetition || registrations.filter(r => r.status === 'registered').length}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-2.5">
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Male</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.byGender?.male || registrations.filter(r => r.gender === 'male').length || 0}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-2.5">
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Female</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.byGender?.female || registrations.filter(r => r.gender === 'female').length || 0}</p>
-              </div>
-            </div>
-          )}
 
           {/* Section Selection Cards */}
           <div className="card card-lg">
@@ -626,8 +688,6 @@ export default function Registrations() {
                   <thead className="bg-slate-100 dark:bg-zinc-900">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">Team Name</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">Manager Name</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">Openers (S/CJ)</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -635,7 +695,7 @@ export default function Registrations() {
                   <tbody className="bg-white dark:bg-zinc-800 divide-y divide-slate-200 dark:divide-zinc-700">
                     {currentSectionRegistrations.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="px-6 py-12 text-center">
+                        <td colSpan="3" className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-zinc-400">
                             <FileText size={48} className="opacity-30" />
                             <p className="font-medium">No final entries yet</p>
@@ -726,7 +786,28 @@ export default function Registrations() {
 
               {/* Athletes/Competitors Table */}
               <div className="mb-6">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg">Competitors</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-900 dark:text-white text-lg">Competitors</h3>
+                  {!editingPreliminary && selectedPreliminaryReg.preliminary_submitted_at && (
+                    <button
+                      onClick={() => {
+                        setPreliminaryAthletes(selectedPreliminaryReg.preliminary_athletes || []);
+                        setEditingPreliminary(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                    >
+                      Edit Athletes
+                    </button>
+                  )}
+                  {editingPreliminary && (
+                    <button
+                      onClick={addPreliminaryAthlete}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                    >
+                      + Add Athlete
+                    </button>
+                  )}
+                </div>
                 {!selectedPreliminaryReg.preliminary_submitted_at ? (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 text-center">
                     <ClipboardList size={48} className="mx-auto text-amber-600 dark:text-amber-400 mb-3 opacity-50" />
@@ -748,57 +829,134 @@ export default function Registrations() {
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">DATE OF BIRTH</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">ID NUMBER</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME OF THE COACH</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">COACH</th>
+                          {editingPreliminary && <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">ACTIONS</th>}
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-zinc-800">
                         {(() => {
-                          // Get preliminary athletes from the registration data
-                          const athletes = selectedPreliminaryReg.preliminary_athletes || [];
+                          // Get preliminary athletes - use editing state if in edit mode
+                          const athletes = editingPreliminary ? preliminaryAthletes : (selectedPreliminaryReg.preliminary_athletes || []);
                           
                           if (athletes.length === 0) {
                             return (
                               <tr>
-                                <td colSpan="7" className="px-6 py-8">
+                                <td colSpan={editingPreliminary ? "8" : "7"} className="px-6 py-8">
                                   <div className="text-center">
                                     <p className="text-slate-700 dark:text-zinc-300 font-medium mb-2">
-                                      No athlete details found for this preliminary entry.
+                                      No athletes added yet
                                     </p>
-                                    <p className="text-sm text-slate-600 dark:text-zinc-400 mb-3">
-                                      This entry was submitted before the athlete tracking system was implemented.
-                                    </p>
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-3 py-2 inline-block">
-                                      💡 Please ask the team to resubmit their preliminary entry form to see athlete details here.
-                                    </p>
+                                    {editingPreliminary && (
+                                      <button
+                                        onClick={addPreliminaryAthlete}
+                                        className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                      >
+                                        + Add First Athlete
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
                             );
                           }
                           
-                          return athletes.map((athlete) => (
-                            <tr key={athlete.id} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
+                          return athletes.map((athlete, index) => (
+                            <tr key={athlete.id || index} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-center font-medium text-slate-900 dark:text-white">
-                                {String(athlete.competitor_number || 0).padStart(2, '0')}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="number"
+                                    value={athlete.competitor_number || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'competitor_number', e.target.value)}
+                                    className="w-16 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700 text-center"
+                                  />
+                                ) : (
+                                  String(athlete.competitor_number || 0).padStart(2, '0')
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-semibold text-slate-900 dark:text-white">
-                                {athlete.weight_category ? `${athlete.weight_category}kg` : '-'}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.weight_category || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'weight_category', e.target.value)}
+                                    placeholder="e.g. 55"
+                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.weight_category ? `${athlete.weight_category}kg` : '-'
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-900 dark:text-white">
-                                {athlete.name || '-'}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.name || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'name', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.name || '-'
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
-                                {athlete.date_of_birth ? new Date(athlete.date_of_birth).toLocaleDateString() : '-'}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="date"
+                                    value={athlete.date_of_birth || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'date_of_birth', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.date_of_birth ? new Date(athlete.date_of_birth).toLocaleDateString() : '-'
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
-                                {athlete.id_number || '-'}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.id_number || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'id_number', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.id_number || '-'
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
-                                {athlete.best_total ? `${athlete.best_total}kg` : '-'}
+                                {editingPreliminary ? (
+                                  <input
+                                    type="number"
+                                    value={athlete.best_total || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'best_total', e.target.value)}
+                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.best_total ? `${athlete.best_total}kg` : '-'
+                                )}
                               </td>
-                              <td className="px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
-                                {athlete.coach_name || '-'}
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
+                                {editingPreliminary ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.coach_name || ''}
+                                    onChange={(e) => updatePreliminaryAthlete(index, 'coach_name', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.coach_name || '-'
+                                )}
                               </td>
+                              {editingPreliminary && (
+                                <td className="px-3 py-3 text-sm">
+                                  <button
+                                    onClick={() => removePreliminaryAthlete(index)}
+                                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    <XCircle size={18} />
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           ));
                         })()}
@@ -831,39 +989,62 @@ export default function Registrations() {
 
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
-              {selectedPreliminaryReg.status === 'preliminary_pending' && (
+              {editingPreliminary ? (
                 <>
                   <button
                     onClick={() => {
-                      updateStatus(selectedPreliminaryReg.id, 'preliminary_declined');
-                      setShowPreliminaryModal(false);
-                      setSelectedPreliminaryReg(null);
+                      setEditingPreliminary(false);
+                      setPreliminaryAthletes([]);
                     }}
-                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
                   >
-                    Decline Entry
+                    Cancel
                   </button>
                   <button
+                    onClick={savePreliminaryAthletes}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selectedPreliminaryReg.status === 'preliminary_pending' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedPreliminaryReg.id, 'preliminary_declined');
+                          setShowPreliminaryModal(false);
+                          setSelectedPreliminaryReg(null);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                      >
+                        Decline Entry
+                      </button>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedPreliminaryReg.id, 'preliminary_approved');
+                          setShowPreliminaryModal(false);
+                          setSelectedPreliminaryReg(null);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                      >
+                        Approve Entry
+                      </button>
+                    </>
+                  )}
+                  <button
                     onClick={() => {
-                      updateStatus(selectedPreliminaryReg.id, 'preliminary_approved');
                       setShowPreliminaryModal(false);
                       setSelectedPreliminaryReg(null);
+                      setEditingPreliminary(false);
                     }}
-                    className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
                   >
-                    Approve Entry
+                    Close
                   </button>
                 </>
               )}
-              <button
-                onClick={() => {
-                  setShowPreliminaryModal(false);
-                  setSelectedPreliminaryReg(null);
-                }}
-                className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
@@ -925,7 +1106,20 @@ export default function Registrations() {
 
               {/* Athletes/Competitors Table with Opening Attempts */}
               <div className="mb-6">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-lg">Competitors & Opening Attempts</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-900 dark:text-white text-lg">Competitors & Opening Attempts</h3>
+                  {!editingFinal && selectedFinalReg.final_submitted_at && (
+                    <button
+                      onClick={() => {
+                        setFinalAthletes(selectedFinalReg.preliminary_athletes || []);
+                        setEditingFinal(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                    >
+                      Edit Athletes
+                    </button>
+                  )}
+                </div>
                 {!selectedFinalReg.final_submitted_at ? (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 text-center">
                     <ClipboardList size={48} className="mx-auto text-amber-600 dark:text-amber-400 mb-3 opacity-50" />
@@ -944,17 +1138,19 @@ export default function Registrations() {
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C/NO.</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">CATEGORY</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME</th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
+                          {editingFinal && <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">SNATCH OPENER</th>}
+                          {editingFinal && <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C&J OPENER</th>}
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-zinc-800">
                         {(() => {
-                          const athletes = selectedFinalReg.preliminary_athletes || [];
+                          const athletes = editingFinal ? finalAthletes : (selectedFinalReg.preliminary_athletes || []);
                           
                           if (athletes.length === 0) {
                             return (
                               <tr>
-                                <td colSpan="4" className="px-6 py-8 text-center">
+                                <td colSpan={editingFinal ? "6" : "4"} className="px-6 py-8 text-center">
                                   <p className="text-slate-700 dark:text-zinc-300 font-medium">
                                     No athlete details found for this final entry.
                                   </p>
@@ -963,8 +1159,8 @@ export default function Registrations() {
                             );
                           }
                           
-                          return athletes.map((athlete) => (
-                            <tr key={athlete.id} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
+                          return athletes.map((athlete, index) => (
+                            <tr key={athlete.id || index} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-center font-medium text-slate-900 dark:text-white">
                                 {String(athlete.competitor_number || 0).padStart(2, '0')}
                               </td>
@@ -974,9 +1170,31 @@ export default function Registrations() {
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-900 dark:text-white">
                                 {athlete.name || '-'}
                               </td>
-                              <td className="px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
+                              <td className={editingFinal ? "border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white" : "px-3 py-3 text-sm font-bold text-slate-900 dark:text-white"}>
                                 {athlete.best_total ? `${athlete.best_total}kg` : '-'}
                               </td>
+                              {editingFinal && (
+                                <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm">
+                                  <input
+                                    type="number"
+                                    value={athlete.snatch_opener || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'snatch_opener', e.target.value)}
+                                    placeholder="kg"
+                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                </td>
+                              )}
+                              {editingFinal && (
+                                <td className="px-3 py-3 text-sm">
+                                  <input
+                                    type="number"
+                                    value={athlete.cnj_opener || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'cnj_opener', e.target.value)}
+                                    placeholder="kg"
+                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                </td>
+                              )}
                             </tr>
                           ));
                         })()}
@@ -1009,39 +1227,62 @@ export default function Registrations() {
 
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
-              {selectedFinalReg.status === 'final_pending' && (
+              {editingFinal ? (
                 <>
                   <button
                     onClick={() => {
-                      updateStatus(selectedFinalReg.id, 'final_declined');
-                      setShowFinalModal(false);
-                      setSelectedFinalReg(null);
+                      setEditingFinal(false);
+                      setFinalAthletes([]);
                     }}
-                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
                   >
-                    Decline Entry
+                    Cancel
                   </button>
                   <button
+                    onClick={saveFinalAthletes}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selectedFinalReg.status === 'final_pending' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedFinalReg.id, 'final_declined');
+                          setShowFinalModal(false);
+                          setSelectedFinalReg(null);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                      >
+                        Decline Entry
+                      </button>
+                      <button
+                        onClick={() => {
+                          updateStatus(selectedFinalReg.id, 'final_approved');
+                          setShowFinalModal(false);
+                          setSelectedFinalReg(null);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                      >
+                        Approve Entry
+                      </button>
+                    </>
+                  )}
+                  <button
                     onClick={() => {
-                      updateStatus(selectedFinalReg.id, 'final_approved');
                       setShowFinalModal(false);
                       setSelectedFinalReg(null);
+                      setEditingFinal(false);
                     }}
-                    className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
                   >
-                    Approve Entry
+                    Close
                   </button>
                 </>
               )}
-              <button
-                onClick={() => {
-                  setShowFinalModal(false);
-                  setSelectedFinalReg(null);
-                }}
-                className="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-slate-900 dark:text-white font-medium transition-colors"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
@@ -1229,25 +1470,6 @@ function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, o
         </div>
       </td>
 
-      {/* Manager Name */}
-      <td className="px-6 py-4">
-        <p className="font-medium text-slate-900 dark:text-white">
-          {reg.team_manager_name || '-'}
-        </p>
-      </td>
-
-      {/* Openers */}
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-sm font-medium">
-            S: {reg.snatch_opener || '-'}
-          </span>
-          <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-medium">
-            CJ: {reg.cnj_opener || '-'}
-          </span>
-        </div>
-      </td>
-
       {/* Status */}
       <td className="px-6 py-4">
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[reg.status] || 'bg-gray-100 text-gray-800'}`}>
@@ -1274,15 +1496,6 @@ function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, o
               <CheckCircle size={20} />
             </button>
           )}
-          {['final_approved', 'confirmed'].includes(reg.status) && !reg.wl_athlete_id && (
-            <button
-              onClick={() => createAthlete(reg.id)}
-              className="p-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white transition-colors shadow-sm"
-              title="Create Athlete for Competition"
-            >
-              <UserPlus size={20} />
-            </button>
-          )}
           {reg.wl_athlete_id && (
             <div className="p-2 rounded-lg bg-emerald-500 text-white" title="Athlete Created">
               <Award size={20} />
@@ -1290,7 +1503,7 @@ function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, o
           )}
           <button
             onClick={() => deleteRegistration(reg.id)}
-            className="w-10 h-10 flex items-center justify-center rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors shadow-md"
+            className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors shadow-sm"
             title="Delete Registration"
           >
             <XCircle size={20} />
