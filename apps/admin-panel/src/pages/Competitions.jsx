@@ -1,4 +1,4 @@
-import { Edit2, Save, Trash2 } from 'lucide-react';
+import { Edit2, Save, Trash2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ export default function Competitions() {
     registration_open: false,
     preliminary_entry_open: false,
     final_entry_open: false,
+    image_url: '',
   });
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function Competitions() {
           registration_open: data.registration_open || false,
           preliminary_entry_open: data.preliminary_entry_open || false,
           final_entry_open: data.final_entry_open || false,
+          image_url: data.image_url || '',
         });
       } else {
         // No competition exists, enable editing mode to create one
@@ -78,17 +80,33 @@ export default function Competitions() {
         organizer: formData.organizer,
         description: formData.description,
         status: formData.status,
+        image_url: formData.image_url,
       };
 
-      console.log('Submitting competition data:', submitData);
+      console.log('📝 Form data:', JSON.parse(JSON.stringify(formData)));
+      console.log('📤 Submitting competition data:', JSON.parse(JSON.stringify(submitData)));
+      console.log('🔍 Date value:', formData.date, 'Type:', typeof formData.date, 'Length:', formData.date?.length);
       console.log('Has existing competition:', !!competition);
 
       if (competition) {
         // Update existing competition
         console.log('Sending PUT request to /competitions/current');
-        const response = await api.put('/competitions/current', submitData);
-        console.log('Update response:', response.data);
-        toast.success('Competition updated successfully!');
+        try {
+          const response = await api.put('/competitions/current', submitData);
+          console.log('Update response:', response.data);
+          toast.success('Competition updated successfully!');
+        } catch (error) {
+          console.log('❌ PUT ERROR RESPONSE:');
+          console.log('Status:', error.response?.status);
+          console.log('Error message (data.message):', error.response?.data?.message);
+          console.log('Error message (data.error.message):', error.response?.data?.error?.message);
+          console.log('Validation Errors:', error.response?.data?.errors);
+          console.log('Full Response Data:');
+          console.log(error.response?.data);
+          console.log('Data sent:');
+          console.log(submitData);
+          throw error;
+        }
       } else {
         // Initialize new competition
         try {
@@ -110,9 +128,21 @@ export default function Competitions() {
       setEditing(false);
       await fetchCompetition();
     } catch (error) {
-      const errorMsg = error.response?.data?.message || error.message;
-      toast.error(competition ? `Failed to update: ${errorMsg}` : `Failed to create: ${errorMsg}`);
-      console.error('Submit error:', error);
+      const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || error.message;
+      const allErrors = error.response?.data?.errors;
+      
+      console.error('❌ FINAL ERROR:');
+      console.error('Status:', error.response?.status);
+      console.error('Message:', errorMsg);
+      console.error('All Validation Errors:', allErrors);
+      console.error('Full Error Object:', error.response?.data);
+      
+      // Check for database column error
+      if (errorMsg?.includes('Could not find') && errorMsg?.includes('image_url')) {
+        toast.error('Database setup required: image_url column is missing. Please contact administrator.');
+      } else {
+        toast.error(competition ? `Failed to update: ${errorMsg}` : `Failed to create: ${errorMsg}`);
+      }
     }
   };
 
@@ -127,6 +157,10 @@ export default function Competitions() {
         organizer: competition.organizer || '',
         description: competition.description || '',
         status: competition.status || 'active',
+        registration_open: competition.registration_open || false,
+        preliminary_entry_open: competition.preliminary_entry_open || false,
+        final_entry_open: competition.final_entry_open || false,
+        image_url: competition.image_url || '',
       });
       setEditing(false);
     }
@@ -270,6 +304,59 @@ export default function Competitions() {
                 className="input"
                 rows={3}
               />
+            </div>
+
+            {/* Competition Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2">
+                Competition Image
+              </label>
+              <div className="space-y-2">
+                {formData.image_url && (
+                  <div className="relative inline-block">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Competition" 
+                      className="h-32 w-auto rounded-lg border border-slate-200 dark:border-zinc-700 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Delete image from server if it has a Supabase URL
+                        if (formData.image_url && formData.image_url.includes('supabase')) {
+                          // Extract path from Supabase URL
+                          // URL format: https://...supabase.co/storage/v1/object/public/competitions/images/...
+                          // We need: images/filename
+                          const urlParts = formData.image_url.split('/');
+                          const pathIndex = urlParts.findIndex(part => part === 'competitions');
+                          if (pathIndex !== -1) {
+                            const path = urlParts.slice(pathIndex + 1).join('/');
+                            api.delete('/uploads/competitions/delete-image', {
+                              data: { path }
+                            }).catch(err => console.warn('Could not delete from server:', err));
+                          }
+                        }
+                        setFormData({ ...formData, image_url: '' });
+                      }}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <ImageUpload
+                  currentImageUrl={formData.image_url}
+                  uploadEndpoint="/uploads/competitions/upload-image"
+                  onUploadSuccess={(data) => {
+                    setFormData({ ...formData, image_url: data.url });
+                    toast.success('Image uploaded successfully');
+                  }}
+                  label="Upload Competition Image"
+                  maxSizeMB={5}
+                />
+              </div>
             </div>
             
             <div>

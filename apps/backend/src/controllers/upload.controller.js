@@ -292,3 +292,133 @@ export const deleteAthletePhoto = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Generic file upload - used for uploading files during entity creation
+ * (e.g., competition image before competition record exists)
+ */
+export const uploadGenericFile = async (req, res, next) => {
+  try {
+    const file = req.file;
+    const { type } = req.body; // type: 'competition', 'team', 'athlete', etc.
+
+    console.log(`📁 Generic file upload. Type: ${type}, File: ${file?.originalname}`);
+
+    if (!file) {
+      throw new AppError('No file uploaded', 400);
+    }
+
+    if (!type) {
+      throw new AppError('File type must be specified', 400);
+    }
+
+    // Validate file
+    validateImageFile(file);
+
+    // Generate unique filename
+    const fileName = generateUniqueFileName(file.originalname);
+    const filePath = `${type}/${fileName}`;
+
+    console.log(`🔄 Uploading to path: ${filePath}`);
+
+    // Upload to Supabase Storage based on type
+    const bucketName = `${type}s`; // competitions, teams, athletes
+    const uploadResult = await uploadFile(bucketName, filePath, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+    console.log(`✅ Generic upload successful. URL: ${uploadResult.publicUrl}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'File uploaded successfully',
+      data: {
+        url: uploadResult.publicUrl,
+        path: uploadResult.path,
+        type: type,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Generic upload error:', error);
+    next(error);
+  }
+};
+
+/**
+ * Upload competition image - for current/active competition
+ */
+export const uploadCompetitionImage = async (req, res, next) => {
+  try {
+    const file = req.file;
+
+    console.log(`🏆 Uploading competition image`);
+    console.log(`📄 File info:`, { 
+      name: file?.originalname, 
+      size: file?.size, 
+      mime: file?.mimetype,
+    });
+
+    if (!file) {
+      throw new AppError('No file uploaded', 400);
+    }
+
+    // Validate file
+    validateImageFile(file);
+
+    // Generate unique filename
+    const fileName = generateUniqueFileName(file.originalname);
+    const filePath = `images/${fileName}`;
+
+    console.log(`🔄 Uploading to path: ${filePath}`);
+
+    // Upload to Supabase Storage
+    const uploadResult = await uploadFile('competitions', filePath, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+    console.log(`✅ Competition image uploaded successfully. URL: ${uploadResult.publicUrl}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Competition image uploaded successfully',
+      data: {
+        url: uploadResult.publicUrl,
+        path: uploadResult.path,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Competition image upload error:', error);
+    next(error);
+  }
+};
+
+/**
+ * Delete a competition image from storage
+ * DELETE /api/uploads/competitions/delete-image
+ */
+export const deleteCompetitionImage = async (req, res, next) => {
+  try {
+    const { path } = req.body;
+
+    if (!path) {
+      throw new AppError('Image path is required', 400);
+    }
+
+    console.log(`🗑️  Deleting competition image at path: ${path}`);
+
+    // Delete from Supabase Storage
+    await deleteFile('competitions', path);
+
+    console.log(`✅ Competition image deleted successfully`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Competition image deleted successfully',
+    });
+  } catch (error) {
+    console.error('❌ Competition image delete error:', error);
+    next(error);
+  }
+};

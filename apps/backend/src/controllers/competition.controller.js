@@ -43,11 +43,72 @@ export const getCurrentCompetition = async (req, res, next) => {
 };
 
 /**
+ * Sync competition to lifting-social-website
+ */
+const syncCompetitionToWebsite = async (competition) => {
+  try {
+    console.log(`📤 Syncing competition to lifting-social-website:`, competition.id);
+    
+    const syncPayload = {
+      wl_competition_id: competition.id,
+      title: competition.name,
+      description: competition.description || '',
+      location: competition.location,
+      venue: competition.location, // Map venue to location
+      start_date: competition.date,
+      registration_deadline: null,
+      preliminary_entry_start: null,
+      preliminary_entry_end: null,
+      final_entry_start: null,
+      final_entry_end: null,
+      weight_categories: [],
+      age_categories: [],
+      sanctioning_body: competition.organizer || 'Unknown',
+      competition_level: 'regional',
+      max_participants: null,
+      entry_fee: 0,
+      require_medical_clearance: false,
+      competition_rules: {},
+      image_url: competition.image_url, // Include the image URL
+      config: {}
+    };
+
+    // Make the sync request to lifting-social-backend
+    const response = await fetch(
+      `${process.env.LIFTING_SOCIAL_API_URL || 'http://localhost:3001'}/api/wl-system/sync/competition`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SYNC_API_KEY || 'dev-key'}`,
+        },
+        body: JSON.stringify(syncPayload),
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`⚠️ Sync failed with status ${response.status}`);
+      const error = await response.text();
+      console.error('Sync error:', error);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Competition synced successfully:`, result);
+  } catch (error) {
+    console.error(`❌ Error syncing competition:`, error);
+    // Don't throw - sync failure shouldn't prevent competition creation
+  }
+};
+
+/**
  * Update the current competition
  * If no competition exists, creates one. Otherwise updates the existing one.
  */
 export const updateCurrentCompetition = async (req, res, next) => {
   try {
+    console.log('📝 Updating competition with data:', req.body);
+    
     // Get current competition
     const { data: existing } = await supabase
       .from('competitions')
@@ -56,10 +117,13 @@ export const updateCurrentCompetition = async (req, res, next) => {
       .limit(1)
       .single();
 
+    console.log('📊 Existing competition:', existing?.id);
+
     let data, error;
 
     if (existing) {
       // Update existing competition
+      console.log('🔄 Updating competition ID:', existing.id);
       const result = await supabase
         .from('competitions')
         .update(req.body)
@@ -68,6 +132,12 @@ export const updateCurrentCompetition = async (req, res, next) => {
       
       data = result.data;
       error = result.error;
+      
+      if (error) {
+        console.error('❌ Supabase update error:', error);
+      } else {
+        console.log('✅ Update successful');
+      }
     } else {
       // Create new competition if none exists
       const result = await supabase
@@ -81,12 +151,16 @@ export const updateCurrentCompetition = async (req, res, next) => {
 
     if (error) throw new AppError(error.message, 400);
 
+    // Sync competition to website
+    const updatedCompetition = data[0];
+    await syncCompetitionToWebsite(updatedCompetition);
+
     // Emit socket event
-    req.app.get('io').emit('competition:updated', data[0]);
+    req.app.get('io').emit('competition:updated', updatedCompetition);
 
     res.status(200).json({
       success: true,
-      data: data[0],
+      data: updatedCompetition,
     });
   } catch (error) {
     next(error);
@@ -122,9 +196,13 @@ export const initializeCompetition = async (req, res, next) => {
 
     if (error) throw new AppError(error.message, 400);
 
+    // Sync competition to website
+    const createdCompetition = data[0];
+    await syncCompetitionToWebsite(createdCompetition);
+
     res.status(201).json({
       success: true,
-      data: data[0],
+      data: createdCompetition,
     });
   } catch (error) {
     next(error);

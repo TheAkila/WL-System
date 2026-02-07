@@ -45,6 +45,7 @@ CREATE TABLE competitions (
     location VARCHAR(255) NOT NULL,
     organizer VARCHAR(255),
     description TEXT,
+    image_url TEXT,
     status competition_status DEFAULT 'upcoming',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

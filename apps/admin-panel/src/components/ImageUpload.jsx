@@ -198,6 +198,7 @@ export default function ImageUpload({
           />
           
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="w-full btn btn-secondary flex items-center justify-center gap-2"

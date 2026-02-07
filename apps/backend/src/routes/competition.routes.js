@@ -26,7 +26,15 @@ router.put(
   authorize('admin', 'technical'),
   [
     body('name').optional().trim().notEmpty(),
-    body('date').optional().isISO8601(),
+    body('date').optional().custom((value) => {
+      if (!value) return true; // Allow empty/undefined for optional fields
+      // Accept both ISO8601 and YYYY-MM-DD formats
+      const iso8601Regex = /^\d{4}-\d{2}-\d{2}(T|$)/;
+      if (!iso8601Regex.test(value)) {
+        throw new Error('Date must be in YYYY-MM-DD or ISO8601 format');
+      }
+      return true;
+    }),
     body('location').optional().trim().notEmpty(),
   ],
   validate,
@@ -40,7 +48,15 @@ router.post(
   authorize('admin'),
   [
     body('name').trim().notEmpty(),
-    body('date').isISO8601(),
+    body('date').custom((value) => {
+      if (!value) throw new Error('Date is required');
+      // Accept both ISO8601 and YYYY-MM-DD formats
+      const iso8601Regex = /^\d{4}-\d{2}-\d{2}(T|$)/;
+      if (!iso8601Regex.test(value)) {
+        throw new Error('Date must be in YYYY-MM-DD or ISO8601 format');
+      }
+      return true;
+    }),
     body('location').trim().notEmpty(),
   ],
   validate,

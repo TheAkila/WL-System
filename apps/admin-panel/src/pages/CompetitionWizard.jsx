@@ -16,6 +16,8 @@ const CompetitionWizard = () => {
     organizer: '',
     numberOfReferees: 3,
     rulesPreset: 'iwf-standard',
+    image: null,
+    imagePreview: null,
     
     // Step 2: Weight Categories
     enableWomenCategories: true,
@@ -37,12 +39,50 @@ const CompetitionWizard = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          image: file,
+          imagePreview: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateCompetition = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       
-      // Create competition
+      // Upload image if provided
+      let imageUrl = null;
+      if (formData.image) {
+        const imageFormData = new FormData();
+        imageFormData.append('file', formData.image);
+        imageFormData.append('type', 'competition');
+        
+        const uploadRes = await fetch('http://localhost:5000/api/uploads', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: imageFormData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.data.url;
+      }
+      
+      // Create competition with image URL
       const compRes = await fetch('http://localhost:5000/api/competitions', {
         method: 'POST',
         headers: {
@@ -54,6 +94,7 @@ const CompetitionWizard = () => {
           date: formData.date,
           location: formData.venue,
           organizer: formData.organizer,
+          image_url: imageUrl,
           status: 'active',
         }),
       });
@@ -171,6 +212,28 @@ const CompetitionWizard = () => {
                   placeholder="e.g., Sports Federation"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Competition Image (Optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">JPG, PNG, WebP (max 5MB)</p>
+                  </div>
+                  {formData.imagePreview && (
+                    <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-300 flex-shrink-0">
+                      <img src={formData.imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

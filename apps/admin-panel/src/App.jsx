@@ -90,9 +90,8 @@ function App() {
   return (
     <AuthProvider>
       <MobileBlocker>
-        <RouterProvider router={router}>
-          <Toaster position="top-right" />
-        </RouterProvider>
+        <RouterProvider router={router} />
+        <Toaster position="top-right" />
       </MobileBlocker>
     </AuthProvider>
   );

@@ -6,6 +6,9 @@ import {
   uploadCompetitionLogo,
   uploadTeamLogo,
   deleteAthletePhoto,
+  uploadGenericFile,
+  uploadCompetitionImage,
+  deleteCompetitionImage,
 } from '../controllers/upload.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
@@ -19,6 +22,32 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB
   },
 });
+
+// Generic file upload route - for uploading files during entity creation
+router.post(
+  '/',
+  protect,
+  authorize('admin'),
+  upload.single('file'),
+  uploadGenericFile
+);
+
+// Competition image upload route
+router.post(
+  '/competitions/upload-image',
+  protect,
+  authorize('admin'),
+  upload.single('logo'),
+  uploadCompetitionImage
+);
+
+// Competition image delete route
+router.delete(
+  '/competitions/delete-image',
+  protect,
+  authorize('admin'),
+  deleteCompetitionImage
+);
 
 // Athlete photo routes
 router.post(
