@@ -2,6 +2,13 @@ import express from 'express';
 import { supabase } from '../config/supabase.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { sendEmail } from '../services/email.js';
+import {
+  createTeamFromRegistration,
+  updateTeamFromRegistration,
+  createAthletesFromPreliminary,
+  updateAthletesFromFinal,
+  tryAutoAssignToSession
+} from '../services/athleteService.js';
 
 const router = express.Router();
 
@@ -66,8 +73,6 @@ router.get('/:competitionId/registrations', protect, async (req, res) => {
       entry_total: reg.entry_total,
       best_snatch: reg.best_snatch,
       best_clean_jerk: reg.best_clean_jerk,
-      snatch_opener: reg.snatch_opener,
-      cnj_opener: reg.cnj_opener,
       club_name: reg.club_name || reg.team_manager_name,
       team_manager_name: reg.team_manager_name,
       team_manager_phone: reg.team_manager_phone,
@@ -212,8 +217,6 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
         .from('event_registrations')
         .update({
           status: 'preliminary_approved',
-          snatch_opener: null,
-          cnj_opener: null,
           final_submitted_at: null,
           final_approved_at: null
         })
@@ -312,6 +315,50 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
               finalStartDate
             });
             console.log('✅ Preliminary approval email sent to:', userEmail);
+            
+            // 🤖 AUTO-CREATE TEAM AND ATHLETES
+            try {
+              console.log('🤖 Starting automatic team and athlete creation...');
+              
+              // 1. Create or find team with all registration data
+              const team = await createTeamFromRegistration(
+                currentReg.club_name || 'Unknown Club',
+                currentReg.nationality || currentReg.team_code || 'LKA',
+                currentReg.team_manager_name,
+                currentReg.team_manager_phone,
+                currentReg.age_category
+              );
+              
+              // 2. Create athletes from preliminary entry
+              const createdAthletes = await createAthletesFromPreliminary(
+                registrationId,
+                team.id,
+                competitionId
+              );
+              
+              // 3. Try to auto-assign to existing sessions
+              if (createdAthletes.length > 0) {
+                console.log('🎯 Attempting to auto-assign athletes to sessions...');
+                let assignedCount = 0;
+                for (const athlete of createdAthletes) {
+                  const assigned = await tryAutoAssignToSession(athlete.id);
+                  if (assigned) assignedCount++;
+                }
+                console.log(`✅ Auto-assigned ${assignedCount} of ${createdAthletes.length} athletes to sessions`);
+              }
+              
+              // Store auto-creation result in response
+              data.auto_created = {
+                team: team.name,
+                team_id: team.id,
+                athletes_created: createdAthletes.length
+              };
+              
+            } catch (autoError) {
+              console.error('❌ Error in auto-creation:', autoError);
+              // Don't fail the approval if auto-creation fails
+              data.auto_creation_error = autoError.message;
+            }
           }
           
           // Preliminary declined - send email (data already cleared above)
@@ -338,6 +385,116 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
               competitionDate
             });
             console.log('✅ Final entry approval email sent to:', userEmail);
+            
+            // 🤖 AUTO-CREATE OR UPDATE ATHLETES FROM FINAL ENTRY
+            try {
+              console.log('🤖 Starting automatic athlete processing from final entry...');
+              
+              // Check if athletes already exist for this registration
+              const { data: existingAthletes, error: checkError } = await supabase
+                .from('athletes')
+                .select('id')
+                .eq('registration_id', registrationId);
+              
+              if (checkError) {
+                console.error('❌ Error checking existing athletes:', checkError);
+                throw checkError;
+              }
+              
+              // Get final entry athletes data
+              const { data: finalAthletes } = await supabase
+                .from('preliminary_entry_athletes')
+                .select('*')
+                .eq('registration_id', registrationId);
+              
+              console.log(`📊 Individual approval - Registration ${registrationId}:`, {
+                existingAthletes: existingAthletes?.length || 0,
+                finalAthletes: finalAthletes?.length || 0,
+                clubName: currentReg.club_name
+              });
+              
+              if (finalAthletes && finalAthletes.length > 0) {
+                // If NO athletes exist, create them (same as preliminary approval)
+                if (!existingAthletes || existingAthletes.length === 0) {
+                  console.log(`➕ Creating ${finalAthletes.length} new athletes...`);
+                  
+                  // 1. Create or find team with all registration data
+                  const team = await createTeamFromRegistration(
+                    currentReg.club_name || 'Unknown Club',
+                    currentReg.nationality || currentReg.team_code || 'LKA',
+                    currentReg.team_manager_name,
+                    currentReg.team_manager_phone,
+                    currentReg.age_category
+                  );
+                  
+                  // 2. Create athletes
+                  const createdAthletes = await createAthletesFromPreliminary(
+                    registrationId,
+                    team.id,
+                    competitionId
+                  );
+                  
+                  // 3. Try to auto-assign to existing sessions
+                  if (createdAthletes.length > 0) {
+                    console.log('🎯 Attempting to auto-assign athletes to sessions...');
+                    let assignedCount = 0;
+                    for (const athlete of createdAthletes) {
+                      const assigned = await tryAutoAssignToSession(athlete.id);
+                      if (assigned) assignedCount++;
+                    }
+                    console.log(`✅ Auto-assigned ${assignedCount} of ${createdAthletes.length} athletes to sessions`);
+                  }
+                  
+                  // Store auto-creation result in response
+                  data.auto_created = {
+                    team: team.name,
+                    team_id: team.id,
+                    athletes_created: createdAthletes.length
+                  };
+                  
+                } else {
+                  // Athletes exist, update them with final entry data
+                  console.log('ℹ️ Existing athletes found, updating team and athletes...');
+                  
+                  // 1. Update team information with all registration data
+                  const updatedTeam = await updateTeamFromRegistration(
+                    registrationId,
+                    currentReg.club_name || 'Unknown Club',
+                    currentReg.nationality || currentReg.team_code || 'LKA',
+                    currentReg.team_manager_name,
+                    currentReg.team_manager_phone,
+                    currentReg.age_category
+                  );
+                  
+                  // 2. Update athletes
+                  const updatedAthletes = await updateAthletesFromFinal(
+                    registrationId,
+                    finalAthletes
+                  );
+                  
+                  console.log(`✅ Updated team and ${updatedAthletes.length} athletes from final entry`);
+                  
+                  // Store auto-update result in response
+                  data.auto_updated = {
+                    team: updatedTeam?.name,
+                    team_id: updatedTeam?.id,
+                    athletes_updated: updatedAthletes.length
+                  };
+                }
+              } else {
+                // No athletes data found!
+                console.log('⚠️⚠️⚠️ NO PRELIMINARY ATHLETES DATA FOUND!');
+                console.log('⚠️ Team will be created but no athletes will be created');
+                console.log('⚠️ Admin should edit athletes in the preliminary form before approving');
+                
+                data.warning = 'No athlete data found. Please edit the preliminary entry to add athletes before approving.';
+              }
+              
+            } catch (autoError) {
+              console.error('❌ Error in auto-processing:', autoError);
+              // Don't fail the approval if auto-processing fails
+              data.auto_process_error = autoError.message;
+            }
           }
           
           // Final declined - send email (data already cleared above)
@@ -427,24 +584,83 @@ router.delete('/:registrationId', protect, authorize('admin'), async (req, res) 
 // Bulk approve preliminary entries
 router.post('/:competitionId/registrations/approve-preliminary', protect, authorize('admin', 'technical'), async (req, res) => {
   try {
+    const { competitionId } = req.params;
     const { ids } = req.body;
     
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ success: false, error: { message: 'No registration IDs provided' } });
     }
+
+    console.log(`🔄 Bulk approving ${ids.length} preliminary entries...`);
     
-    const { error } = await supabase
-      .from('event_registrations')
-      .update({ 
-        status: 'preliminary_approved',
-        preliminary_approved_at: new Date().toISOString()
-      })
-      .in('id', ids)
-      .eq('status', 'preliminary_pending');
+    let successCount = 0;
+    let athleteCount = 0;
+    const results = [];
     
-    if (error) throw error;
+    for (const registrationId of ids) {
+      try {
+        // Get current registration
+        const { data: currentReg, error: regError } = await supabase
+          .from('event_registrations')
+          .select('*')
+          .eq('id', registrationId)
+          .eq('status', 'preliminary_pending')
+          .single();
+        
+        if (regError || !currentReg) {
+          console.log(`⏭️ Skipping ${registrationId} - not in preliminary_pending status`);
+          continue;
+        }
+        
+        // Update status
+        const { error: updateError } = await supabase
+          .from('event_registrations')
+          .update({ 
+            status: 'preliminary_approved',
+            preliminary_approved_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+        
+        if (updateError) throw updateError;
+        
+        // Create team and athletes
+        try {
+          const team = await createTeamFromRegistration(
+            currentReg.club_name || 'Unknown Club',
+            currentReg.nationality || currentReg.team_code || 'LKA',
+            currentReg.team_manager_name,
+            currentReg.team_manager_phone,
+            currentReg.age_category
+          );
+          
+          const createdAthletes = await createAthletesFromPreliminary(
+            registrationId,
+            team.id,
+            competitionId
+          );
+          
+          athleteCount += createdAthletes.length;
+          results.push({ id: registrationId, team: team.name, athletes: createdAthletes.length });
+        } catch (autoError) {
+          console.error(`⚠️ Auto-creation error for ${registrationId}:`, autoError);
+          results.push({ id: registrationId, error: autoError.message });
+        }
+        
+        successCount++;
+      } catch (err) {
+        console.error(`❌ Error processing ${registrationId}:`, err);
+      }
+    }
     
-    res.json({ success: true, message: `Approved ${ids.length} registrations` });
+    console.log(`✅ Bulk approved ${successCount} registrations, created ${athleteCount} athletes`);
+    
+    res.json({ 
+      success: true, 
+      message: `Approved ${successCount} registrations, created ${athleteCount} athletes`,
+      approved: successCount,
+      athletes_created: athleteCount,
+      details: results
+    });
   } catch (error) {
     console.error('Error approving preliminary entries:', error);
     res.status(500).json({ success: false, error: { message: error.message } });
@@ -454,24 +670,118 @@ router.post('/:competitionId/registrations/approve-preliminary', protect, author
 // Bulk approve final entries
 router.post('/:competitionId/registrations/approve-final', protect, authorize('admin', 'technical'), async (req, res) => {
   try {
+    const { competitionId } = req.params;
     const { ids } = req.body;
     
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ success: false, error: { message: 'No registration IDs provided' } });
     }
+
+    console.log(`🔄 Bulk approving ${ids.length} final entries...`);
     
-    const { error } = await supabase
-      .from('event_registrations')
-      .update({ 
-        status: 'final_approved',
-        final_approved_at: new Date().toISOString()
-      })
-      .in('id', ids)
-      .eq('status', 'final_pending');
+    let successCount = 0;
+    let athleteCount = 0;
+    const results = [];
     
-    if (error) throw error;
+    for (const registrationId of ids) {
+      try {
+        // Get current registration
+        const { data: currentReg, error: regError } = await supabase
+          .from('event_registrations')
+          .select('*')
+          .eq('id', registrationId)
+          .eq('status', 'final_pending')
+          .single();
+        
+        if (regError || !currentReg) {
+          console.log(`⏭️ Skipping ${registrationId} - not in final_pending status`);
+          continue;
+        }
+        
+        // Update status
+        const { error: updateError } = await supabase
+          .from('event_registrations')
+          .update({ 
+            status: 'final_approved',
+            final_approved_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+        
+        if (updateError) throw updateError;
+        
+        // Check if athletes exist and update/create them
+        try {
+          const { data: existingAthletes } = await supabase
+            .from('athletes')
+            .select('id')
+            .eq('registration_id', registrationId);
+          
+          const { data: finalAthletes } = await supabase
+            .from('preliminary_entry_athletes')
+            .select('*')
+            .eq('registration_id', registrationId);
+          
+          console.log(`📊 Registration ${registrationId}:`, {
+            existingAthletes: existingAthletes?.length || 0,
+            finalAthletes: finalAthletes?.length || 0
+          });
+          
+          if (!finalAthletes || finalAthletes.length === 0) {
+            console.warn(`⚠️ No preliminary_entry_athletes found for registration ${registrationId}`);
+            results.push({ id: registrationId, warning: 'No athlete data found in preliminary_entry_athletes' });
+            continue;
+          }
+          
+          if (!existingAthletes || existingAthletes.length === 0) {
+            // Create new athletes
+            console.log(`➕ Creating ${finalAthletes.length} new athletes for registration ${registrationId}`);
+            const team = await createTeamFromRegistration(
+              currentReg.club_name || 'Unknown Club',
+              currentReg.nationality || currentReg.team_code || 'LKA',
+              currentReg.team_manager_name,
+              currentReg.team_manager_phone,
+              currentReg.age_category
+            );
+            
+            const createdAthletes = await createAthletesFromPreliminary(
+              registrationId,
+              team.id,
+              competitionId
+            );
+            
+            console.log(`✅ Created ${createdAthletes.length} athletes for registration ${registrationId}`);
+            athleteCount += createdAthletes.length;
+            results.push({ id: registrationId, team: team.name, athletes: createdAthletes.length, action: 'created' });
+          } else {
+            // Update existing athletes
+            const updatedAthletes = await updateAthletesFromFinal(
+              registrationId,
+              finalAthletes
+            );
+            
+            athleteCount += updatedAthletes.length;
+            results.push({ id: registrationId, athletes: updatedAthletes.length, action: 'updated' });
+          }
+        } catch (autoError) {
+          console.error(`⚠️ Auto-creation/update error for ${registrationId}:`, autoError);
+          results.push({ id: registrationId, error: autoError.message });
+        }
+        
+        successCount++;
+      } catch (err) {
+        console.error(`❌ Error processing ${registrationId}:`, err);
+      }
+    }
     
-    res.json({ success: true, message: `Approved ${ids.length} final entries` });
+    console.log(`✅ Bulk approved ${successCount} final entries, processed ${athleteCount} athletes`);
+    
+    res.json({ 
+      success: true, 
+      message: `Approved ${successCount} final entries, processed ${athleteCount} athletes`,
+      approved: successCount,
+      athletes_processed: athleteCount,
+      details: results
+    });
   } catch (error) {
     console.error('Error approving final entries:', error);
     res.status(500).json({ success: false, error: { message: error.message } });
@@ -677,8 +987,6 @@ router.post('/:competitionId/registrations/:registrationId/create-athlete', prot
       registration_id: registrationId,
       lot_number: reg.lot_number,
       start_number: reg.start_number,
-      snatch_first_attempt: reg.snatch_opener,
-      cnj_first_attempt: reg.cnj_opener,
       entry_total: reg.entry_total,
       status: 'registered',
     };
@@ -991,17 +1299,36 @@ router.put('/:competitionId/registrations/:registrationId/final-athletes', prote
     const { registrationId } = req.params;
     const { athletes } = req.body;
 
-    // Update each athlete's opening attempts
+    console.log('📝 Updating final athletes for registration:', registrationId);
+    console.log('Athletes data:', athletes);
+
+    // Update each athlete's information
     if (athletes && athletes.length > 0) {
       for (const athlete of athletes) {
         if (athlete.id) {
-          await supabase
+          // Build update object with all available fields
+          const updateData = {
+            competitor_number: athlete.competitor_number,
+            weight_category: athlete.weight_category,
+            name: athlete.name,
+            date_of_birth: athlete.date_of_birth,
+            id_number: athlete.id_number,
+            best_total: athlete.best_total,
+            coach_name: athlete.coach_name
+          };
+
+          console.log(`🔄 Updating athlete ${athlete.id}:`, updateData);
+
+          const { error } = await supabase
             .from('preliminary_entry_athletes')
-            .update({
-              snatch_opener: athlete.snatch_opener,
-              cnj_opener: athlete.cnj_opener
-            })
+            .update(updateData)
             .eq('id', athlete.id);
+
+          if (error) {
+            console.error(`❌ Error updating athlete ${athlete.id}:`, error);
+          } else {
+            console.log(`✅ Updated athlete ${athlete.id}`);
+          }
         }
       }
     }

@@ -80,14 +80,24 @@ export default function Sessions() {
       // Note: competition_id is now auto-assigned by backend
       if (editingId) {
         console.log('🔄 Updating session:', editingId);
-        await api.put(`/sessions/${editingId}`, dataToSubmit);
+        const response = await api.put(`/sessions/${editingId}`, dataToSubmit);
         console.log('✅ Session updated successfully');
         toast.success('Session updated');
       } else {
         console.log('➕ Creating new session');
-        await api.post('/sessions', dataToSubmit);
+        const response = await api.post('/sessions', dataToSubmit);
+        const data = response.data?.data;
         console.log('✅ Session created successfully');
-        toast.success(`Session created with ${dataToSubmit.weight_classes.length} weight class(es)`);
+        
+        // Show auto-assignment notification
+        if (data?.auto_assigned_count > 0) {
+          toast.success(
+            `✅ Session created! ${data.auto_assigned_count} athlete(s) auto-assigned to this session`,
+            { duration: 5000 }
+          );
+        } else {
+          toast.success(`Session created with ${dataToSubmit.weight_classes.length} weight class(es)`);
+        }
       }
       resetForm();
       setShowForm(false);

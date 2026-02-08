@@ -163,12 +163,27 @@ export default function Registrations() {
     
     try {
       console.log('Updating status:', registrationId, 'to', newStatus);
-      await api.put(`/competitions/${competition.id}/registrations/${registrationId}`, {
+      const response = await api.put(`/competitions/${competition.id}/registrations/${registrationId}`, {
         status: newStatus,
         ...additionalData
       });
       
-      toast.success(`Status updated to ${STATUS_LABELS[newStatus]}`);
+      // Show auto-creation notifications
+      const data = response.data?.data;
+      if (data?.auto_created) {
+        toast.success(
+          `✅ ${STATUS_LABELS[newStatus]}! Team "${data.auto_created.team}" and ${data.auto_created.athletes_created} athlete(s) created automatically`,
+          { duration: 5000 }
+        );
+      } else if (data?.auto_updated) {
+        toast.success(
+          `✅ ${STATUS_LABELS[newStatus]}! ${data.auto_updated.athletes_updated} athlete(s) updated automatically`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.success(`Status updated to ${STATUS_LABELS[newStatus]}`);
+      }
+      
       fetchData();
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -320,14 +335,31 @@ export default function Registrations() {
   const handleEditFinal = (reg) => {
     setSelectedFinalReg(reg);
     setFinalAthletes(reg.preliminary_athletes || []);
-    setEditingFinal(true);
     setShowFinalModal(true);
+  };
+
+  const addFinalAthlete = () => {
+    setFinalAthletes([...finalAthletes, {
+      id: Date.now(),
+      competitor_number: finalAthletes.length + 1,
+      name: '',
+      weight_category: '',
+      date_of_birth: '',
+      id_number: '',
+      best_total: '',
+      coach_name: '',
+      isNew: true
+    }]);
   };
 
   const updateFinalAthlete = (index, field, value) => {
     const updated = [...finalAthletes];
     updated[index] = { ...updated[index], [field]: value };
     setFinalAthletes(updated);
+  };
+
+  const removeFinalAthlete = (index) => {
+    setFinalAthletes(finalAthletes.filter((_, i) => i !== index));
   };
 
   const saveFinalAthletes = async () => {
@@ -337,7 +369,13 @@ export default function Registrations() {
       });
       toast.success('Final athletes updated successfully');
       setEditingFinal(false);
-      fetchData();
+      
+      // Refresh data to show updated athletes
+      await fetchData();
+      
+      // Close modal after data is refreshed
+      setShowFinalModal(false);
+      setSelectedFinalReg(null);
     } catch (error) {
       toast.error('Failed to update final athletes');
     }
@@ -710,7 +748,10 @@ export default function Registrations() {
                           updateStatus={updateStatus} 
                           deleteRegistration={deleteRegistration} 
                           createAthlete={createAthlete} 
-                          onView={() => { setSelectedFinalReg(reg); setShowFinalModal(true); }}
+                          onView={() => { 
+                            setSelectedFinalReg(reg); 
+                            setShowFinalModal(true); 
+                          }}
                           STATUS_COLORS={STATUS_COLORS} 
                           STATUS_LABELS={STATUS_LABELS} 
                         />
@@ -988,7 +1029,17 @@ export default function Registrations() {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
+            <div className="border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
+              {!editingPreliminary && selectedPreliminaryReg?.status === 'preliminary_pending' && (!selectedPreliminaryReg?.preliminary_athletes || selectedPreliminaryReg.preliminary_athletes.length === 0) && (
+                <div className="px-6 pt-4 pb-2">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      ⚠️ <strong>No athlete data found!</strong> Click "Edit Athletes" to add athletes before approving, or athletes will not be created.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-3 p-6">
               {editingPreliminary ? (
                 <>
                   <button
@@ -1023,6 +1074,16 @@ export default function Registrations() {
                       </button>
                       <button
                         onClick={() => {
+                          const athletes = selectedPreliminaryReg.preliminary_athletes || [];
+                          if (athletes.length === 0) {
+                            const confirm = window.confirm(
+                              '⚠️ WARNING: No athlete data found!\n\n' +
+                              'Approving without athletes means no athletes will be created in the system.\n\n' +
+                              'RECOMMENDED: Click "Edit Athletes" to add athlete data first, then approve.\n\n' +
+                              'Do you still want to approve without athletes?'
+                            );
+                            if (!confirm) return;
+                          }
                           updateStatus(selectedPreliminaryReg.id, 'preliminary_approved');
                           setShowPreliminaryModal(false);
                           setSelectedPreliminaryReg(null);
@@ -1045,6 +1106,7 @@ export default function Registrations() {
                   </button>
                 </>
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -1104,10 +1166,10 @@ export default function Registrations() {
                 </div>
               </div>
 
-              {/* Athletes/Competitors Table with Opening Attempts */}
+              {/* Athletes/Competitors Table */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-lg">Competitors & Opening Attempts</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-white text-lg">Competitors</h3>
                   {!editingFinal && selectedFinalReg.final_submitted_at && (
                     <button
                       onClick={() => {
@@ -1117,6 +1179,14 @@ export default function Registrations() {
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                     >
                       Edit Athletes
+                    </button>
+                  )}
+                  {editingFinal && (
+                    <button
+                      onClick={addFinalAthlete}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                    >
+                      + Add Athlete
                     </button>
                   )}
                 </div>
@@ -1137,10 +1207,12 @@ export default function Registrations() {
                         <tr className="bg-slate-100 dark:bg-zinc-900">
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C/NO.</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">CATEGORY</th>
-                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">NAME OF THE COMPETITOR</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">DATE OF BIRTH</th>
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">ID NUMBER</th>
                           <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">BEST TOTAL</th>
-                          {editingFinal && <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">SNATCH OPENER</th>}
-                          {editingFinal && <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">C&J OPENER</th>}
+                          <th className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">COACH</th>
+                          {editingFinal && <th className="px-3 py-3 text-left text-xs font-semibold text-slate-700 dark:text-zinc-300">ACTIONS</th>}
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-zinc-800">
@@ -1150,10 +1222,20 @@ export default function Registrations() {
                           if (athletes.length === 0) {
                             return (
                               <tr>
-                                <td colSpan={editingFinal ? "6" : "4"} className="px-6 py-8 text-center">
-                                  <p className="text-slate-700 dark:text-zinc-300 font-medium">
-                                    No athlete details found for this final entry.
-                                  </p>
+                                <td colSpan={editingFinal ? "8" : "7"} className="px-6 py-8">
+                                  <div className="text-center">
+                                    <p className="text-slate-700 dark:text-zinc-300 font-medium mb-2">
+                                      No athletes added yet
+                                    </p>
+                                    {editingFinal && (
+                                      <button
+                                        onClick={addFinalAthlete}
+                                        className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                                      >
+                                        + Add First Athlete
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -1162,37 +1244,98 @@ export default function Registrations() {
                           return athletes.map((athlete, index) => (
                             <tr key={athlete.id || index} className="border-t border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/50">
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-center font-medium text-slate-900 dark:text-white">
-                                {String(athlete.competitor_number || 0).padStart(2, '0')}
+                                {editingFinal ? (
+                                  <input
+                                    type="number"
+                                    value={athlete.competitor_number || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'competitor_number', e.target.value)}
+                                    className="w-16 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700 text-center"
+                                  />
+                                ) : (
+                                  String(athlete.competitor_number || 0).padStart(2, '0')
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-semibold text-slate-900 dark:text-white">
-                                {athlete.weight_category ? `${athlete.weight_category}kg` : '-'}
+                                {editingFinal ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.weight_category || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'weight_category', e.target.value)}
+                                    placeholder="e.g. 55"
+                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.weight_category ? `${athlete.weight_category}kg` : '-'
+                                )}
                               </td>
                               <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-900 dark:text-white">
-                                {athlete.name || '-'}
+                                {editingFinal ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.name || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'name', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.name || '-'
+                                )}
                               </td>
-                              <td className={editingFinal ? "border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white" : "px-3 py-3 text-sm font-bold text-slate-900 dark:text-white"}>
-                                {athlete.best_total ? `${athlete.best_total}kg` : '-'}
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
+                                {editingFinal ? (
+                                  <input
+                                    type="date"
+                                    value={athlete.date_of_birth || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'date_of_birth', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.date_of_birth ? new Date(athlete.date_of_birth).toLocaleDateString() : '-'
+                                )}
                               </td>
-                              {editingFinal && (
-                                <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm">
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
+                                {editingFinal ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.id_number || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'id_number', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.id_number || '-'
+                                )}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm font-bold text-slate-900 dark:text-white">
+                                {editingFinal ? (
                                   <input
                                     type="number"
-                                    value={athlete.snatch_opener || ''}
-                                    onChange={(e) => updateFinalAthlete(index, 'snatch_opener', e.target.value)}
-                                    placeholder="kg"
+                                    value={athlete.best_total || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'best_total', e.target.value)}
                                     className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
                                   />
-                                </td>
-                              )}
+                                ) : (
+                                  athlete.best_total ? `${athlete.best_total}kg` : '-'
+                                )}
+                              </td>
+                              <td className="border-r border-slate-200 dark:border-zinc-700 px-3 py-3 text-sm text-slate-600 dark:text-zinc-400">
+                                {editingFinal ? (
+                                  <input
+                                    type="text"
+                                    value={athlete.coach_name || ''}
+                                    onChange={(e) => updateFinalAthlete(index, 'coach_name', e.target.value)}
+                                    className="w-full px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
+                                  />
+                                ) : (
+                                  athlete.coach_name || '-'
+                                )}
+                              </td>
                               {editingFinal && (
                                 <td className="px-3 py-3 text-sm">
-                                  <input
-                                    type="number"
-                                    value={athlete.cnj_opener || ''}
-                                    onChange={(e) => updateFinalAthlete(index, 'cnj_opener', e.target.value)}
-                                    placeholder="kg"
-                                    className="w-20 px-2 py-1 border border-slate-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-700"
-                                  />
+                                  <button
+                                    onClick={() => removeFinalAthlete(index)}
+                                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    <XCircle size={18} />
+                                  </button>
                                 </td>
                               )}
                             </tr>
@@ -1226,7 +1369,17 @@ export default function Registrations() {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
+            <div className="border-t border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900">
+              {!editingFinal && selectedFinalReg?.status === 'final_pending' && (!selectedFinalReg?.preliminary_athletes || selectedFinalReg.preliminary_athletes.length === 0) && (
+                <div className="px-6 pt-4 pb-2">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      ⚠️ <strong>No athlete data found!</strong> Click "Edit Athletes" to add athletes before approving, or athletes will not be created/updated.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-3 p-6">
               {editingFinal ? (
                 <>
                   <button
@@ -1247,13 +1400,14 @@ export default function Registrations() {
                 </>
               ) : (
                 <>
-                  {selectedFinalReg.status === 'final_pending' && (
+                  {selectedFinalReg?.status === 'final_pending' && (
                     <>
                       <button
                         onClick={() => {
                           updateStatus(selectedFinalReg.id, 'final_declined');
                           setShowFinalModal(false);
                           setSelectedFinalReg(null);
+                          setFinalAthletes([]);
                         }}
                         className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
                       >
@@ -1261,9 +1415,20 @@ export default function Registrations() {
                       </button>
                       <button
                         onClick={() => {
+                          const athletes = selectedFinalReg.preliminary_athletes || [];
+                          if (athletes.length === 0) {
+                            const confirm = window.confirm(
+                              '⚠️ WARNING: No athlete data found!\n\n' +
+                              'Approving without athletes means no athletes will be created/updated in the system.\n\n' +
+                              'RECOMMENDED: Click "Edit Athletes" to add athlete data first, then approve.\n\n' +
+                              'Do you still want to approve without athletes?'
+                            );
+                            if (!confirm) return;
+                          }
                           updateStatus(selectedFinalReg.id, 'final_approved');
                           setShowFinalModal(false);
                           setSelectedFinalReg(null);
+                          setFinalAthletes([]);
                         }}
                         className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
                       >
@@ -1283,6 +1448,7 @@ export default function Registrations() {
                   </button>
                 </>
               )}
+              </div>
             </div>
           </div>
         </div>

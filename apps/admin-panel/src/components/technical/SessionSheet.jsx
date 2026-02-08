@@ -396,13 +396,13 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
           const response = await api.put(`/attempts/${attemptData.id}`, payload);
           console.log('✅ Attempt updated:', response.data);
           setLastSaved(new Date());
-          toast.success('✓ Saved');
+          // toast.success('✓ Saved'); // Hidden to reduce notification noise
         } else {
           // Create new attempt
           const response = await api.post('/attempts', payload);
           console.log('✅ Attempt created:', response.data);
           setLastSaved(new Date());
-          toast.success('✓ Saved');
+          // toast.success('✓ Saved'); // Hidden to reduce notification noise
         }
         
         // Emit socket update to notify other users (but not ourselves)
@@ -450,7 +450,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       const response = await api.put(`/athletes/${athleteId}`, { is_dq: isDQ });
       console.log('✅ DQ status updated:', response.data);
       
-      toast.success(isDQ ? 'Athlete disqualified' : 'DQ removed');
+      // toast.success(isDQ ? 'Athlete disqualified' : 'DQ removed'); // Hidden to reduce notification noise
     } catch (error) {
       console.error('❌ Error updating DQ status:', error);
       console.error('Error details:', error.response?.data);
@@ -471,7 +471,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       if (socketService) {
         // Emit explicit switch event
         socketService.emit('display:switch', { sessionId: session.id });
-        toast.success('Display screen activated for this session');
+        // toast.success('Display screen activated for this session'); // Hidden to reduce notification noise
       } else {
         toast.error('Socket service not available');
       }
@@ -525,7 +525,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Session data exported successfully');
+      // toast.success('Session data exported successfully'); // Hidden to reduce notification noise
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export session data');
@@ -561,7 +561,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       setTimerRunning(false);
       setTimerKey(prev => prev + 1);
       
-      toast.success('All attempts cleared successfully');
+      // toast.success('All attempts cleared successfully'); // Hidden to reduce notification noise
     } catch (error) {
       console.error('Clear attempts error:', error);
       toast.error('Failed to clear attempts');
@@ -574,14 +574,14 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
   const handleSessionStateChange = async (response) => {
     // Refresh session data after state change
     await fetchSessionData();
-    toast.success('Session state updated');
+    // toast.success('Session state updated'); // Hidden to reduce notification noise
   };
 
   // Phase 2: Handle weigh-in modal close and refresh
   const handleWeighInComplete = async () => {
     setShowWeighInModal(false);
     await fetchSessionData();
-    toast.success('Weigh-in completed');
+    // toast.success('Weigh-in completed'); // Hidden to reduce notification noise
   };
 
   // Group athletes by weight class in ascending order

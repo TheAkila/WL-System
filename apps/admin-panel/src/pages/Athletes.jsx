@@ -96,7 +96,7 @@ export default function Athletes() {
     }
 
     try {
-      // Ensure we're sending the correct data format
+      // Ensure we're sending the correct data format - ALL fields from the form
       const submitData = {
         name: formData.name.trim(),
         birth_date: formData.birth_date || null,
@@ -104,6 +104,10 @@ export default function Athletes() {
         weight_category: formData.weight_category,
         session_id: formData.session_id,
         team_id: formData.team_id || null,
+        id_number: formData.id_number?.trim() || null,
+        registration_number: formData.registration_number?.trim() || null,
+        best_total: formData.best_total ? parseFloat(formData.best_total) : null,
+        coach_name: formData.coach_name?.trim() || null,
       };
 
       if (editingId) {

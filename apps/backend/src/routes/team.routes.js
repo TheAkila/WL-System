@@ -25,7 +25,7 @@ router.post(
   authorize('admin', 'technical'),
   [
     body('name').trim().notEmpty().withMessage('Team name is required'),
-    body('country').trim().isLength({ min: 3, max: 3 }).withMessage('Country code must be 3 characters (ISO 3166-1 alpha-3)'),
+    body('country').trim().notEmpty().withMessage('Team code is required'),
   ],
   validate,
   createTeam

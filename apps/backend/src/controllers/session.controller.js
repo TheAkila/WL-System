@@ -1,6 +1,96 @@
 import { supabase } from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
+/**
+ * Auto-assign athletes to a session based on weight category and gender
+ * @param {string} sessionId - Session UUID
+ * @returns {number} - Number of athletes assigned
+ */
+async function autoAssignAthletesToSession(sessionId) {
+  try {
+    // Get session details
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('id, weight_category, weight_classes, gender, competition_id')
+      .eq('id', sessionId)
+      .single();
+    
+    if (sessionError) {
+      console.error('❌ Error fetching session:', sessionError);
+      throw sessionError;
+    }
+    
+    console.log('🔍 Session details:', {
+      id: session.id,
+      weight_category: session.weight_category,
+      weight_classes: session.weight_classes,
+      gender: session.gender
+    });
+    
+    // Determine which weight categories to match
+    let weightCategoriesToMatch = [];
+    if (session.weight_classes && session.weight_classes.length > 0) {
+      weightCategoriesToMatch = session.weight_classes;
+    } else if (session.weight_category) {
+      weightCategoriesToMatch = [session.weight_category];
+    } else {
+      console.warn('⚠️ Session has no weight categories defined');
+      return 0;
+    }
+    
+    console.log('🎯 Matching weight categories:', weightCategoriesToMatch);
+    
+    // Find all athletes matching the criteria who don't have a session assigned
+    let query = supabase
+      .from('athletes')
+      .select('id, name, weight_category, gender, session_id')
+      .in('weight_category', weightCategoriesToMatch)
+      .is('session_id', null); // Only assign athletes without a session
+    
+    // Match gender if specified
+    if (session.gender) {
+      query = query.eq('gender', session.gender);
+    }
+    
+    const { data: athletes, error: athletesError } = await query;
+    
+    if (athletesError) {
+      console.error('❌ Error fetching athletes:', athletesError);
+      throw athletesError;
+    }
+    
+    if (!athletes || athletes.length === 0) {
+      console.log('ℹ️ No athletes found matching criteria');
+      return 0;
+    }
+    
+    console.log(`📊 Found ${athletes.length} athletes to assign:`, 
+      athletes.map(a => `${a.name} (${a.weight_category}kg, ${a.gender})`));
+    
+    // Update all matching athletes to assign them to this session
+    const athleteIds = athletes.map(a => a.id);
+    
+    const { data: updatedAthletes, error: updateError } = await supabase
+      .from('athletes')
+      .update({ session_id: sessionId })
+      .in('id', athleteIds)
+      .select();
+    
+    if (updateError) {
+      console.error('❌ Error updating athletes:', updateError);
+      throw updateError;
+    }
+    
+    console.log(`✅ Successfully assigned ${updatedAthletes.length} athletes to session ${sessionId}`);
+    
+    return updatedAthletes.length;
+    
+  } catch (error) {
+    console.error('❌ Error in autoAssignAthletesToSession:', error);
+    throw error;
+  }
+}
+
 export const getSessions = async (req, res, next) => {
   try {
     const { competitionId, status, limit = 50, offset = 0 } = req.query;
@@ -102,9 +192,25 @@ export const createSession = async (req, res, next) => {
 
     if (error) throw new AppError(error.message, 400);
 
+    const newSession = data[0];
+    
+    // 🤖 AUTO-ASSIGN ATHLETES TO SESSION
+    try {
+      console.log('🤖 Auto-assigning athletes to new session...');
+      const assignedCount = await autoAssignAthletesToSession(newSession.id);
+      console.log(`✅ Auto-assigned ${assignedCount} athletes to session`);
+      
+      // Add auto-assignment info to response
+      newSession.auto_assigned_count = assignedCount;
+    } catch (autoError) {
+      console.error('❌ Error in auto-assignment:', autoError);
+      // Don't fail session creation if auto-assignment fails
+      newSession.auto_assignment_error = autoError.message;
+    }
+
     res.status(201).json({
       success: true,
-      data: data[0],
+      data: newSession,
     });
   } catch (error) {
     next(error);
@@ -130,15 +236,29 @@ export const updateSession = async (req, res, next) => {
       throw new AppError('Session not found', 404);
     }
 
-    console.log('✅ Session updated successfully:', { sessionId: data[0].id, newStatus: data[0].status });
+    const updatedSession = data[0];
+    console.log('✅ Session updated successfully:', { sessionId: updatedSession.id, newStatus: updatedSession.status });
+    
+    // 🤖 AUTO-REASSIGN ATHLETES if weight category or gender changed
+    if (req.body.weight_category || req.body.weight_classes || req.body.gender) {
+      try {
+        console.log('🤖 Weight category/gender updated, re-assigning athletes...');
+        const assignedCount = await autoAssignAthletesToSession(updatedSession.id);
+        console.log(`✅ Auto-assigned ${assignedCount} athletes after update`);
+        updatedSession.auto_assigned_count = assignedCount;
+      } catch (autoError) {
+        console.error('❌ Error in auto-assignment:', autoError);
+        updatedSession.auto_assignment_error = autoError.message;
+      }
+    }
     
     // Emit socket event
-    req.app.get('io').emit('session:updated', data[0]);
+    req.app.get('io').emit('session:updated', updatedSession);
     console.log('📡 Emitted session:updated event');
 
     res.status(200).json({
       success: true,
-      data: data[0],
+      data: updatedSession,
     });
   } catch (error) {
     console.error('🔴 updateSession error:', error.message);

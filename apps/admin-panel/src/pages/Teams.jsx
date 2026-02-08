@@ -13,7 +13,9 @@ export default function Teams() {
   const [formData, setFormData] = useState({
     name: '',
     country: '',
+    manager_name: '',
     manager_phone: '',
+    age_category: '',
   });
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function Teams() {
       if (editingId) {
         await api.put(`/teams/${editingId}`, formData);
         toast.success('Team updated successfully');
-        setFormData({ name: '', country: '', manager_phone: '' });
+        setFormData({ name: '', country: '', manager_name: '', manager_phone: '', age_category: '' });
         setShowForm(false);
         setEditingId(null);
         fetchTeams();
@@ -62,7 +64,9 @@ export default function Teams() {
         setFormData({
           name: response.data.data.name,
           country: response.data.data.country,
+          manager_name: response.data.data.manager_name || '',
           manager_phone: response.data.data.manager_phone || '',
+          age_category: response.data.data.age_category || '',
           logo_url: response.data.data.logo_url || '',
         });
         // Keep the form open so user can upload logo
@@ -81,7 +85,9 @@ export default function Teams() {
     setFormData({
       name: team.name,
       country: team.country,
+      manager_name: team.manager_name || '',
       manager_phone: team.manager_phone || '',
+      age_category: team.age_category || '',
       logo_url: team.logo_url,
     });
     setShowForm(true);
@@ -105,7 +111,7 @@ export default function Teams() {
         <div>
           <h1 className="text-4xl font-heading font-bold text-slate-900 dark:text-white mb-2">Teams</h1>
           <p className="text-slate-600 dark:text-zinc-400 font-ui">Manage teams and clubs</p>
-        </div>
+        </div>name: '', manager_phone: '', age_category
         <button
           onClick={() => {
             setEditingId(null);
@@ -142,12 +148,20 @@ export default function Teams() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team Code</label>
                 <input
                   type="text"
-                  placeholder="Team Code (3 letters, e.g., USA)"
+                  placeholder="Team Code (e.g., USA, TEAM01)"
                   required
-                  maxLength="3"
-                  minLength="3"
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value.toUpperCase() })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team Manager Name</label>
+                <input
+                  type="text"
+                  placeholder="Manager/Coach/Captain Name"
+                  value={formData.manager_name || ''}
+                  onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
                   className="input"
                 />
               </div>
@@ -160,6 +174,19 @@ export default function Teams() {
                   onChange={(e) => setFormData({ ...formData, manager_phone: e.target.value })}
                   className="input"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age Category</label>
+                <select
+                  value={formData.age_category || ''}
+                  onChange={(e) => setFormData({ ...formData, age_category: e.target.value })}
+                  className="input"
+                >
+                  <option value="">Select category</option>
+                  <option value="Youth">Youth</option>
+                  <option value="Junior">Junior</option>
+                  <option value="Senior">Senior</option>
+                </select>
               </div>
             </div>
 

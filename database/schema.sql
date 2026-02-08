@@ -14,20 +14,54 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUM TYPES
 -- =====================================================
 
-CREATE TYPE competition_status AS ENUM ('upcoming', 'active', 'completed', 'cancelled');
-CREATE TYPE session_status AS ENUM ('scheduled', 'in-progress', 'completed', 'cancelled');
-CREATE TYPE lift_type AS ENUM ('snatch', 'clean_and_jerk');
-CREATE TYPE attempt_result AS ENUM ('pending', 'good', 'no-lift');
-CREATE TYPE referee_decision AS ENUM ('good', 'no-lift');
-CREATE TYPE gender_type AS ENUM ('male', 'female');
-CREATE TYPE user_role AS ENUM ('admin', 'technical', 'referee', 'viewer');
+DO $$ BEGIN
+    CREATE TYPE competition_status AS ENUM ('upcoming', 'active', 'completed', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE session_status AS ENUM ('scheduled', 'in-progress', 'completed', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE lift_type AS ENUM ('snatch', 'clean_and_jerk');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE attempt_result AS ENUM ('pending', 'good', 'no-lift');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE referee_decision AS ENUM ('good', 'no-lift');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE gender_type AS ENUM ('male', 'female');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('admin', 'technical', 'referee', 'viewer');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- =====================================================
 -- CORE TABLES
 -- =====================================================
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -38,7 +72,7 @@ CREATE TABLE users (
 );
 
 -- Competitions table
-CREATE TABLE competitions (
+CREATE TABLE IF NOT EXISTS competitions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     date DATE NOT NULL,
@@ -52,17 +86,17 @@ CREATE TABLE competitions (
 );
 
 -- Teams/Clubs table
-CREATE TABLE teams (
+CREATE TABLE IF NOT EXISTS teams (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    country VARCHAR(3) NOT NULL, -- ISO 3166-1 alpha-3 country code
+    country VARCHAR(50) NOT NULL, -- Team code (can be country code or custom team identifier)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, country)
 );
 
 -- Sessions table
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     competition_id UUID NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -77,7 +111,7 @@ CREATE TABLE sessions (
 );
 
 -- Athletes table
-CREATE TABLE athletes (
+CREATE TABLE IF NOT EXISTS athletes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     country VARCHAR(3) NOT NULL, -- ISO 3166-1 alpha-3 country code
@@ -109,7 +143,7 @@ CREATE TABLE athletes (
 );
 
 -- Attempts table
-CREATE TABLE attempts (
+CREATE TABLE IF NOT EXISTS attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     athlete_id UUID NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
     session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
