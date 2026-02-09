@@ -249,9 +249,9 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       nextLifter.liftType === attemptType && 
       nextLifter.attemptNumber === attemptNumber;
 
-    // If this is the next lifter, highlight in blue
+    // If this is the next lifter, highlight in blue with blink animation
     if (isNextLifter) {
-      return 'bg-blue-500 dark:bg-blue-700 text-blue-900 dark:text-blue-50 border-blue-700 font-bold ring-2 ring-blue-500';
+      return 'animate-pulse bg-blue-500 dark:bg-blue-700 text-blue-900 dark:text-blue-50 border-blue-700 font-bold ring-2 ring-blue-500';
     }
 
     // If athlete is DQ'd, all attempts are red
