@@ -33,6 +33,20 @@ export default function TechnicalPanel() {
     }
   };
 
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      setIsFullscreen(false);
+    }
+  };
+
   if (!selectedSession) {
     return (
       <div>
@@ -62,7 +76,7 @@ export default function TechnicalPanel() {
       <SessionSheet 
         session={selectedSession} 
         onBack={() => setSelectedSession(null)}
-        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+        onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
       />
     </div>

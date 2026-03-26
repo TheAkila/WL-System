@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock, Monitor, Maximize2, Minimize2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -824,8 +824,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
         {/* Spreadsheet Table */}
         {!loading && !error && (
-          <div className="overflow-hidden">
-            <table className="w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600\">
+          <div className={`overflow-hidden ${isFullscreen ? 'h-full' : ''}`}>
+            <table className={`w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600 ${isFullscreen ? 'h-full' : ''}`}>
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '150px' }} />
@@ -886,7 +886,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                   let globalIndex = 0;
                   
                   return sortedClasses.map(weightClass => (
-                    <div key={weightClass} className="contents">
+                    <React.Fragment key={weightClass}>
                       {/* Weight Class Section Header - Only show for multiple classes */}
                       {sortedClasses.length > 1 && (
                       <tr className="h-11 bg-black bg-opacity-10 dark:bg-black dark:bg-opacity-20 border-2 border-gray-400 dark:border-gray-600">
@@ -903,8 +903,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                         return (
                           <tr 
                             key={athlete.id} 
-                            className="h-[52px] bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden"
-                          >
+                            className={`${isFullscreen ? 'h-full' : 'h-[52px]'} bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden`}>
                             <td className="p-2 text-sm font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
                               {globalIndex}
                             </td>
@@ -918,8 +917,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             
                             {/* Snatch Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`snatch-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
-                                <div className="absolute inset-0 overflow-hidden">
+                              <td key={`snatch-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-full' : 'h-[52px]'} `}>
+                                <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}
                                     attemptType="snatch"
@@ -941,8 +940,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
                             {/* Clean & Jerk Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`clean_and_jerk-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
-                                <div className="absolute inset-0 overflow-hidden">
+                              <td key={`clean_and_jerk-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-full' : 'h-[52px]'} `}>
+                                <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}
                                     attemptType="clean_and_jerk"
@@ -958,8 +957,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             ))}
 
                             {/* Best C&J */}
-                            <td className="border-2 border-r border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
-                              <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                            <td className={`border-2 border-r border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 p-0 relative ${isFullscreen ? '' : 'h-[52px]'} `}>
+                              <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                 <span className="text-base font-bold text-black dark:text-white">
                                   {athlete.bestCleanJerk > 0 ? athlete.bestCleanJerk : '-'}
                                 </span>
@@ -981,8 +980,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             </td>
 
                             {/* DQ */}
-                            <td className="border-2 border-gray-400 dark:border-gray-600 p-0 relative" style={{ height: '52px', maxHeight: '52px' }}>
-                              <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                            <td className={`border-2 border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? '' : 'h-[52px]'} `}>
+                              <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                 <input
                                   type="checkbox"
                                   checked={athlete.is_dq || false}
@@ -991,7 +990,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                       a.id === athlete.id ? { ...a, is_dq: e.target.checked } : a
                                     );
                                     setAthletes(newAthletes);
-                                    fetch(`/api/athletes/${athlete.id}`, {
+                                    fetch('/api/athletes/' + athlete.id, {
                                       method: 'PATCH',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ is_dq: e.target.checked })
@@ -1004,7 +1003,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                           </tr>
                         );
                       })}
-                    </div>
+                    </React.Fragment>
                   ));
                 })()}
               </tbody>
