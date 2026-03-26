@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Check, X, SkipForward } from 'lucide-react';
+import { Check, X, SkipForward, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpdate, previousAttempts = [], forceEditMode = false, isDQ = false, nextLifter = null }) {
@@ -266,10 +266,10 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return 'bg-slate-100 dark:bg-zinc-800 text-slate-400 hover:bg-slate-200 dark:hover:bg-zinc-700';
     }
     if (result === 'good') {
-      return 'bg-green-300 dark:bg-green-800/75 text-green-900 dark:text-green-50 border-green-600';
+      return 'bg-green-400 dark:bg-green-800/75 text-green-900 dark:text-green-50 border-green-600';
     }
     if (result === 'no_lift') {
-      return 'bg-red-300 dark:bg-red-900/75 text-red-900 dark:text-red-50 border-red-600';
+      return 'bg-red-500 dark:bg-red-900/75 text-white border-red-600';
     }
     // Pending state - yellow
     return 'bg-yellow-300 dark:bg-yellow-900/75 text-yellow-900 dark:text-yellow-50 border-yellow-600 hover:bg-yellow-400 dark:hover:bg-yellow-900/85';
@@ -296,16 +296,16 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       ) : weight ? (
         <div className="w-full h-full flex items-center justify-center group relative">
           {/* Weight display - always visible and centered */}
-          <span className={`font-bold flex items-center justify-center ${result === 'no_lift' ? 'text-lg line-through decoration-red-600 dark:decoration-red-400 decoration-2' : 'text-lg'}`}>
+          <span className={`font-bold flex items-center justify-center ${result === 'no_lift' ? 'text-lg line-through decoration-white dark:decoration-red-400 decoration-2' : 'text-lg'}`}>
             {weight}
           </span>
           
           {/* Visual Markers for Results */}
           {result === 'good' && (
-            <Check size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-green-700 dark:text-green-400 opacity-50 pointer-events-none" />
+            <Check size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-green-800 dark:text-green-400 opacity-50 pointer-events-none" />
           )}
           {result === 'no_lift' && (
-            <X size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-red-800 dark:text-red-400 opacity-50 pointer-events-none" />
+            <X size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-white opacity-60 pointer-events-none" />
           )}
           
           {/* Edit count indicator - always visible in top right */}
@@ -365,6 +365,21 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
                   <Check size={12} strokeWidth={4} />
                 </button>
               )}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Check if edits are exhausted here as well, so we don't open the input pointlessly
+                  if (!forceEditMode && attempt && editCount >= maxEdits) {
+                    toast.error(`Cannot edit: Maximum ${maxEdits} changes allowed per attempt`);
+                    return;
+                  }
+                  setIsEditing(true);
+                }}
+                className="w-5 h-5 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded shadow-md transition-colors"
+                title="Edit Weight"
+              >
+                <Edit2 size={10} strokeWidth={3} />
+              </button>
             </div>
           )}
         </div>
