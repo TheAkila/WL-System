@@ -520,6 +520,12 @@ export class SessionStateMachine {
         throw new Error(error.message);
       }
 
+      // Ensure weigh_in_completed_at is stamped even if legacy function lacks it
+      await supabase
+        .from('athletes')
+        .update({ weigh_in_completed_at: supabase.fn.now() })
+        .eq('id', athleteId);
+
       return {
         success: true,
         data: data,

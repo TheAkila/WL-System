@@ -694,7 +694,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
             <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-14" />
           </div>
 
-          {/* Timer in fullscreen header */}
+          {/* Timer in fullscreen header (Temporarily commented out for space) */}
+          {/*
           {nextLifter && (
             <div className="flex items-center gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 whitespace-nowrap z-10">
               <CompetitionTimer
@@ -711,6 +712,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               />
             </div>
           )}
+          */}
           <button
             onClick={onToggleFullscreen}
             className="fixed bottom-3 sm:bottom-4 right-3 sm:right-4 z-50 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium"
@@ -828,9 +830,12 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
             {isFullscreen && (
               <style>{`
                 .perfect-fit-table td, .perfect-fit-table th {
-                  padding-top: max(0.2vh, 1px) !important;
-                  padding-bottom: max(0.2vh, 1px) !important;
-                  height: auto !important;
+                  padding-top: max(0.1vh, 1px) !important;
+                  padding-bottom: max(0.1vh, 1px) !important;
+                  height: 1px !important;
+                }
+                .perfect-fit-table tbody tr {
+                  height: 1% !important;
                 }
                 .perfect-fit-table .h-11 {
                   height: auto !important;

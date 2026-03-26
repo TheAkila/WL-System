@@ -385,8 +385,10 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
           )}
         </div>
       ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <span className="text-lg invisible select-none font-bold">0</span>
+        <div className="w-full h-full flex items-center justify-center group relative">
+          <span className="font-bold flex items-center justify-center text-lg invisible select-none">
+            0
+          </span>
         </div>
       )}
     </div>

@@ -38,6 +38,7 @@ export default function WeighInModal({ session, onClose, onComplete }) {
             id: a.id, 
             name: a.name, 
             weight_category: a.weight_category,
+            gender: a.gender,
             session_id: a.session_id 
           }))
         });
@@ -74,8 +75,70 @@ export default function WeighInModal({ session, onClose, onComplete }) {
     }));
   };
 
+  // Basic weight-category validation (mirrors WeighIn.jsx)
+  const getWeightCategoryLimits = (category, gender) => {
+    const categories = {
+      male: {
+        '60': { min: 0, max: 60 },
+        '65': { min: 60.01, max: 65 },
+        '71': { min: 65.01, max: 71 },
+        '79': { min: 71.01, max: 79 },
+        '88': { min: 79.01, max: 88 },
+        '94': { min: 88.01, max: 94 },
+        '110': { min: 94.01, max: 110 },
+        '110+': { min: 110.01, max: Infinity }
+      },
+      female: {
+        '48': { min: 0, max: 48 },
+        '53': { min: 48.01, max: 53 },
+        '58': { min: 53.01, max: 58 },
+        '63': { min: 58.01, max: 63 },
+        '69': { min: 63.01, max: 69 },
+        '77': { min: 69.01, max: 77 },
+        '86': { min: 77.01, max: 86 },
+        '86+': { min: 86.01, max: Infinity }
+      }
+    };
+    return categories[gender]?.[category] || null;
+  };
+
+  const validateWeight = (athlete, value) => {
+    if (!value || !athlete?.weight_category || !athlete?.gender) return null;
+    const limits = getWeightCategoryLimits(athlete.weight_category, athlete.gender);
+    if (!limits) return null;
+
+    const bodyWeight = parseFloat(value);
+    if (Number.isNaN(bodyWeight)) return null;
+
+    if (bodyWeight > limits.max) {
+      return {
+        valid: false,
+        message: `⚠️ OVERWEIGHT: ${bodyWeight}kg exceeds ${athlete.weight_category}kg category (max ${limits.max}kg). Athlete will be disqualified unless overridden.`,
+        type: 'error'
+      };
+    }
+    if (bodyWeight < limits.min) {
+      return {
+        valid: false,
+        message: `⚠️ UNDERWEIGHT: ${bodyWeight}kg is below ${athlete.weight_category}kg category minimum (${limits.min}kg).`,
+        type: 'warning'
+      };
+    }
+    return { valid: true, message: '✓ Weight within category limits', type: 'success' };
+  };
+
   const handleMarkWeighedIn = async (athleteId) => {
     const weight = weights[athleteId];
+    const athlete = athletes.find(a => a.id === athleteId);
+
+    const validation = validateWeight(athlete, weight);
+    if (validation && !validation.valid) {
+      // Show the validation message and block submission if it's an error; allow warnings after user sees it
+      setError(validation.message);
+      if (validation.type === 'error') {
+        return;
+      }
+    }
 
     if (!weight || weight <= 0) {
       setError('Please enter a valid weight');
@@ -103,6 +166,7 @@ export default function WeighInModal({ session, onClose, onComplete }) {
                   weighed_in: true,
                   body_weight_kg: weight,
                   weigh_in_date: new Date().toISOString(),
+                  weigh_in_completed_at: new Date().toISOString(),
                 }
               : athlete
           )

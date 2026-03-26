@@ -273,7 +273,8 @@ BEGIN
         weighed_in = TRUE,
         body_weight_kg = p_body_weight_kg,
         start_weight_kg = COALESCE(p_start_weight_kg, p_body_weight_kg + 5),
-        weigh_in_date = CURRENT_TIMESTAMP
+        weigh_in_date = CURRENT_TIMESTAMP,
+        weigh_in_completed_at = COALESCE(weigh_in_completed_at, CURRENT_TIMESTAMP)
     WHERE id = p_athlete_id
     RETURNING session_id INTO v_session_id;
     
