@@ -753,11 +753,10 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12" />
             </div>
 
-            <div className="flex items-center gap-2.5 z-10">
+            <div className="flex items-center gap-2.5 z-10 w-[200px] justify-end relative">
               <div className="h-5 w-px bg-slate-300 dark:bg-zinc-600 hidden sm:block"></div>
               {!isFullscreen && (
                 <div className="flex items-center gap-3">
-                  <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12 md:hidden" />
                   <div className="scale-90 origin-right">
                     <CompetitionTimer
                       key={timerKey}

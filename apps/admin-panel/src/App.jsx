@@ -86,7 +86,21 @@ function App() {
     <AuthProvider>
       <MobileBlocker>
         <RouterProvider router={router} />
-        <Toaster position="top-right" />
+        <Toaster 
+          position="bottom-right" 
+          toastOptions={{
+            style: {
+              fontSize: '14px',
+              padding: '12px 16px',
+            },
+            success: {
+              duration: 2500,
+            },
+            error: {
+              duration: 3500,
+            },
+          }}
+        />
       </MobileBlocker>
     </AuthProvider>
   );
