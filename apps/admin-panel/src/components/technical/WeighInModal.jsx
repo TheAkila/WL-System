@@ -81,19 +81,18 @@ export default function WeighInModal({ session, onClose, onComplete }) {
       male: {
         '60': { min: 0, max: 60 },
         '65': { min: 60.01, max: 65 },
-        '71': { min: 65.01, max: 71 },
-        '79': { min: 71.01, max: 79 },
-        '88': { min: 79.01, max: 88 },
-        '94': { min: 88.01, max: 94 },
-        '110': { min: 94.01, max: 110 },
+        '70.75': { min: 65.01, max: 70.75 },
+        '85': { min: 70.7501, max: 85 },
+        '95': { min: 85.01, max: 95 },
+        '110': { min: 95.01, max: 110 },
         '110+': { min: 110.01, max: Infinity }
       },
       female: {
-        '48': { min: 0, max: 48 },
-        '53': { min: 48.01, max: 53 },
-        '58': { min: 53.01, max: 58 },
-        '63': { min: 58.01, max: 63 },
-        '69': { min: 63.01, max: 69 },
+        '49': { min: 0, max: 49 },
+        '53': { min: 49.01, max: 53 },
+        '57': { min: 53.01, max: 57 },
+        '61': { min: 57.01, max: 61 },
+        '69': { min: 61.01, max: 69 },
         '77': { min: 69.01, max: 77 },
         '86': { min: 77.01, max: 86 },
         '86+': { min: 86.01, max: Infinity }

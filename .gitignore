@@ -54,3 +54,5 @@ Thumbs.db
 .cache/
 .parcel-cache/
 .eslintcache
+.vercel
+.env*.local

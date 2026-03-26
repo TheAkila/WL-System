@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { Download, RefreshCw, ArrowLeft, Timer, Check, Trash2, Unlock, Monitor, Maximize2, Minimize2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -27,6 +27,9 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
   const [selectedWeightClass, setSelectedWeightClass] = useState(null); // Multi-class: selected weight class
   const [availableWeightClasses, setAvailableWeightClasses] = useState([]); // Multi-class: all weight classes in session
   const [previousAthleteId, setPreviousAthleteId] = useState(null); // Track athlete ID for timer logic
+  const [tableScale, setTableScale] = useState(1); // Scale sheet to fit fullscreen vertically
+  const tableWrapperRef = useRef(null);
+  const tableRef = useRef(null);
 
   const sessionId = session?.id;
 
@@ -467,6 +470,37 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
     }
   }, [sessionId]);
 
+  // Auto-scale the table in fullscreen so it fits without scrolling
+  useLayoutEffect(() => {
+    if (!isFullscreen) {
+      setTableScale(1);
+      return undefined;
+    }
+
+    const measure = () => {
+      const wrapper = tableWrapperRef.current;
+      const table = tableRef.current;
+      if (!wrapper || !table) return;
+
+      const available = wrapper.clientHeight;
+      const needed = table.scrollHeight;
+
+      if (available > 0 && needed > 0) {
+        const scale = Math.min(1, available / needed);
+        setTableScale(scale);
+      }
+    };
+
+    // Measure on next frame to ensure layout is ready
+    const rafId = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', measure);
+    };
+  }, [isFullscreen, athletes]);
+
   const handleActivateDisplay = () => {
     try {
       if (socketService) {
@@ -606,7 +640,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
   };
 
   return (
-    <div className={`${isFullscreen ? 'h-screen w-screen overflow-hidden flex flex-col' : 'min-h-screen'} bg-slate-100 dark:bg-zinc-900 ${isFullscreen ? 'p-0' : 'p-2'}`}>
+    <div className={`${isFullscreen ? 'h-screen w-screen overflow-hidden flex flex-col min-h-0' : 'min-h-screen'} bg-slate-100 dark:bg-zinc-900 ${isFullscreen ? 'p-0' : 'p-2'}`}>
       {/* Header - Hidden in fullscreen */}
       {!isFullscreen && (
       <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3">
@@ -782,7 +816,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       )}
 
       {/* Spreadsheet Sheet - Optimized for fullscreen */}
-      <div className={`bg-white dark:bg-zinc-900 ${isFullscreen ? 'rounded-none shadow-none p-1 sm:p-2 flex-1 overflow-hidden flex flex-col relative' : 'rounded-lg shadow-lg p-2 sm:p-3'}`}>
+      <div className={`bg-white dark:bg-zinc-900 ${isFullscreen ? 'rounded-none shadow-none p-1 sm:p-2 flex-1 overflow-hidden flex flex-col min-h-0 relative' : 'rounded-lg shadow-lg p-2 sm:p-3'}`}>
         {!isFullscreen && (
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="min-w-0">
@@ -827,50 +861,19 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
         {/* Spreadsheet Table */}
         {!loading && !error && (
           <>
-            {isFullscreen && (
-              <style>{`
-                .perfect-fit-table td, .perfect-fit-table th {
-                  padding-top: max(0.1vh, 1px) !important;
-                  padding-bottom: max(0.1vh, 1px) !important;
-                  height: 1px !important;
-                }
-                .perfect-fit-table tbody tr {
-                  height: 1% !important;
-                }
-                .perfect-fit-table .h-11 {
-                  height: auto !important;
-                }
-                .perfect-fit-table .p-2 {
-                  padding: 1px 2px !important;
-                }
-                .perfect-fit-table .p-3 {
-                  padding: 2px 4px !important;
-                }
-                .perfect-fit-table td .text-sm, .perfect-fit-table th .text-sm,
-                .perfect-fit-table td .text-xs, .perfect-fit-table th .text-xs {
-                  font-size: min(1.2vh, 0.875rem) !important;
-                  line-height: 1.1 !important;
-                }
-                .perfect-fit-table td .text-base, .perfect-fit-table th .text-base {
-                  font-size: min(1.3vh, 1rem) !important;
-                  line-height: 1.1 !important;
-                }
-                .perfect-fit-table td .text-lg, .perfect-fit-table input {
-                  font-size: min(1.4vh, 1.125rem) !important;
-                  line-height: 1.1 !important;
-                }
-                .perfect-fit-table td svg {
-                  width: min(1.4vh, 1.125rem) !important;
-                  height: min(1.4vh, 1.125rem) !important;
-                }
-                .perfect-fit-table input[type="checkbox"] {
-                  width: min(1.8vh, 1.25rem) !important;
-                  height: min(1.8vh, 1.25rem) !important;
-                }
-              `}</style>
-            )}
-          <div className={`overflow-hidden ${isFullscreen ? 'h-full' : ''}`}>
-            <table className={`w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600 ${isFullscreen ? 'h-full perfect-fit-table' : ''}`}>
+          <div
+            ref={tableWrapperRef}
+            className={`${isFullscreen ? 'flex-1 min-h-0 overflow-hidden' : 'overflow-x-auto'}`}
+          >
+            <table
+              ref={tableRef}
+              className={`w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600`}
+              style={isFullscreen ? {
+                transform: `scale(${tableScale})`,
+                transformOrigin: 'top left',
+                width: tableScale < 1 ? `${100 / tableScale}%` : '100%'
+              } : undefined}
+            >
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '150px' }} />
@@ -948,7 +951,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                         return (
                           <tr 
                             key={athlete.id} 
-                            className={`${isFullscreen ? 'h-full' : 'h-[52px]'} bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden`}>
+                            className={`${isFullscreen ? 'h-auto' : 'h-[52px]'} bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden`}>
                             <td className="p-2 text-sm font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
                               {globalIndex}
                             </td>
@@ -962,7 +965,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             
                             {/* Snatch Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`snatch-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-full' : 'h-[52px]'} `}>
+                              <td key={`snatch-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-auto' : 'h-[52px]'} `}>
                                 <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}
@@ -985,7 +988,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
                             {/* Clean & Jerk Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`clean_and_jerk-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-full' : 'h-[52px]'} `}>
+                              <td key={`clean_and_jerk-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-auto' : 'h-[52px]'} `}>
                                 <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}
