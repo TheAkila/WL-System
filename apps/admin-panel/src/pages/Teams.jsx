@@ -111,7 +111,7 @@ export default function Teams() {
         <div>
           <h1 className="text-4xl font-heading font-bold text-slate-900 dark:text-white mb-2">Teams</h1>
           <p className="text-slate-600 dark:text-zinc-400 font-ui">Manage teams and clubs</p>
-        </div>name: '', manager_phone: '', age_category
+        </div>
         <button
           onClick={() => {
             setEditingId(null);
