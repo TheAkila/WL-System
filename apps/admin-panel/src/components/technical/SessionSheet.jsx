@@ -697,7 +697,6 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
           {/* Timer in fullscreen header */}
           {nextLifter && (
             <div className="flex items-center gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 whitespace-nowrap z-10">
-              <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-8 md:hidden" />
               <CompetitionTimer
                 key={timerKey}
                 duration={timerDuration}
