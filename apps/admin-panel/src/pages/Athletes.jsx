@@ -154,8 +154,8 @@ export default function Athletes() {
     if (!formData.session_id) {
       // If no session selected, show all classes for current gender
       return formData.gender === 'female'
-        ? ['48', '53', '58', '63', '69', '77', '86', '86+']
-        : ['60', '65', '71', '79', '88', '94', '110', '110+'];
+        ? ['49', '53', '57', '61', '69', '77', '86', '86+']
+        : ['60', '65', '70', '75', '85', '95', '110', '110+'];
     }
 
     // Get the selected session
@@ -163,8 +163,8 @@ export default function Athletes() {
     
     if (!selectedSession) {
       return formData.gender === 'female'
-        ? ['48', '53', '58', '63', '69', '77', '86', '86+']
-        : ['60', '65', '71', '79', '88', '94', '110', '110+'];
+        ? ['49', '53', '57', '61', '69', '77', '86', '86+']
+        : ['60', '65', '70', '75', '85', '95', '110', '110+'];
     }
 
     // If session has weight_classes array, use those
