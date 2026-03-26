@@ -47,15 +47,13 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return;
     }
     
-    // Check if edits are exhausted
-    if (attempt && editCount >= maxEdits) {
+    // Check if the attempt is already completed
+    const isCompleted = result === 'good' || result === 'no-lift';
+    
+    // Check if edits are exhausted (only restrict if it's an ongoing attempt)
+    if (!isCompleted && attempt && editCount >= maxEdits) {
       toast.error(`Cannot edit: Maximum ${maxEdits} changes allowed per attempt`);
       return;
-    }
-    
-    // Allow editing weight only if no result set yet (except pending or not_attempted)
-    if (result === 'good' || result === 'no-lift') {
-      return; // Cannot edit completed attempts normally
     }
     
     if (!isEditing) {
@@ -79,8 +77,11 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return;
     }
 
+    const isCompleted = result === 'good' || result === 'no-lift';
+
     // Weight validation - must be equal or higher than previous good lift (IWF rule)
-    if (weightValue <= minWeight) {
+    // We skip this validation if the admin is just correcting a completed attempt
+    if (!isCompleted && weightValue <= minWeight) {
       toast.error(`Weight must be higher than previous good lift (${minWeight}kg)`);
       return;
     }
@@ -90,7 +91,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       a => a.lift_type === attemptType && a.result !== null && a.result !== 'not_attempted'
     ).length;
 
-    if (completedAttempts >= 3 && !attempt) {
+    if (!isCompleted && completedAttempts >= 3 && !attempt) {
       toast.error('❌ Maximum 3 attempts per lift type already reached');
       return;
     }
@@ -101,8 +102,8 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
         const isWeightChanging = weightValue !== (attempt.weight || attempt.requested_weight);
         const newEditCount = isWeightChanging ? editCount + 1 : editCount;
         
-        // Verify edit limit (unless in force edit mode)
-        if (!forceEditMode && isWeightChanging && newEditCount > maxEdits) {
+        // Verify edit limit (unless in force edit mode or if correcting a completed attempt)
+        if (!forceEditMode && !isCompleted && isWeightChanging && newEditCount > maxEdits) {
           toast.error(`Cannot edit: Maximum ${maxEdits} changes allowed per attempt`);
           setInputValue(weight || '');
           setIsEditing(false);
@@ -114,15 +115,15 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
           ...attempt,
           weight: weightValue,
           requested_weight: weightValue,
-          edit_count: forceEditMode ? editCount : newEditCount // Don't increment in force edit mode
+          edit_count: (forceEditMode || isCompleted) ? editCount : newEditCount // Don't increment in force edit mode or completed corrections
         };
         await onUpdate(updatedAttempt);
         
-        if (isWeightChanging && !forceEditMode) {
+        if (isWeightChanging && !forceEditMode && !isCompleted) {
           const remaining = maxEdits - newEditCount;
           toast.success(`Weight updated (${remaining} ${remaining === 1 ? 'change' : 'changes'} remaining)`);
-        } else if (forceEditMode) {
-          toast.success('Weight updated (Force Edit mode)');
+        } else if (forceEditMode || isCompleted) {
+          toast.success('Weight updated successfully');
         }
       } else {
         // Create new attempt (first edit = 0)
