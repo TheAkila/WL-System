@@ -21,22 +21,22 @@ export default function WeightChangeModal({
   const [canChange, setCanChange] = useState(false);
 
   useEffect(() => {
+    const fetchWeightChangeCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(
+          `${API_URL}/api/athletes/${athlete.id}/weight-change-count?liftType=${liftType}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setChangeCount(response.data.data.count);
+        setCanChange(response.data.canChangeWeight);
+      } catch (err) {
+        console.error('Error fetching weight change count:', err);
+      }
+    };
+
     fetchWeightChangeCount();
   }, [athlete.id, liftType]);
-
-  const fetchWeightChangeCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${API_URL}/api/athletes/${athlete.id}/weight-change-count?liftType=${liftType}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setChangeCount(response.data.data.count);
-      setCanChange(response.data.canChangeWeight);
-    } catch (err) {
-      console.error('Error fetching weight change count:', err);
-    }
-  };
 
   const validateWeight = () => {
     if (!newWeight || isNaN(newWeight)) {

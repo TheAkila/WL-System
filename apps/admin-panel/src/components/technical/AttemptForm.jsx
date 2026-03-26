@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Save, X, ChevronDown } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import api from '../../services/api';
 
 export default function AttemptForm({ 
@@ -25,54 +25,54 @@ export default function AttemptForm({
 
   // Load existing attempts for this athlete
   useEffect(() => {
+    const loadAttempts = async () => {
+      try {
+        // Fetch athlete data if missing
+        if (!selectedAthlete.body_weight) {
+          const athleteResponse = await api.get(`/athletes/${selectedAthlete.id}`);
+          if (athleteResponse.data?.data) {
+            // Data is already in selectedAthlete, but we can enhance it
+          }
+        }
+
+        const response = await api.get(
+          `/attempts/athlete/${selectedAthlete.id}?session_id=${session.id}`
+        );
+        if (response.data && response.data.length > 0) {
+          const snatchAttempts = response.data.filter(a => a.lift_type === 'snatch');
+          const cleanJerkAttempts = response.data.filter(a => a.lift_type === 'clean_and_jerk');
+          
+          setAttempts({
+            snatch: [1, 2, 3].map(num => {
+              const existing = snatchAttempts.find(a => a.attempt_number === num);
+              return {
+                attempt_number: num,
+                weight: existing?.weight || '',
+                result: existing?.result || '',
+                id: existing?.id
+              };
+            }),
+            clean_and_jerk: [1, 2, 3].map(num => {
+              const existing = cleanJerkAttempts.find(a => a.attempt_number === num);
+              return {
+                attempt_number: num,
+                weight: existing?.weight || '',
+                result: existing?.result || '',
+                id: existing?.id
+              };
+            })
+          });
+        }
+      } catch (error) {
+        console.error('Error loading attempts:', error);
+        toast.error('Failed to load attempts');
+      }
+    };
+
     if (selectedAthlete && session) {
       loadAttempts();
     }
   }, [selectedAthlete, session]);
-
-  const loadAttempts = async () => {
-    try {
-      // Fetch athlete data if missing
-      if (!selectedAthlete.body_weight) {
-        const athleteResponse = await api.get(`/athletes/${selectedAthlete.id}`);
-        if (athleteResponse.data?.data) {
-          // Data is already in selectedAthlete, but we can enhance it
-        }
-      }
-
-      const response = await api.get(
-        `/attempts/athlete/${selectedAthlete.id}?session_id=${session.id}`
-      );
-      if (response.data && response.data.length > 0) {
-        const snatchAttempts = response.data.filter(a => a.lift_type === 'snatch');
-        const cleanJerkAttempts = response.data.filter(a => a.lift_type === 'clean_and_jerk');
-        
-        setAttempts({
-          snatch: [1, 2, 3].map(num => {
-            const existing = snatchAttempts.find(a => a.attempt_number === num);
-            return {
-              attempt_number: num,
-              weight: existing?.weight || '',
-              result: existing?.result || '',
-              id: existing?.id
-            };
-          }),
-          clean_and_jerk: [1, 2, 3].map(num => {
-            const existing = cleanJerkAttempts.find(a => a.attempt_number === num);
-            return {
-              attempt_number: num,
-              weight: existing?.weight || '',
-              result: existing?.result || '',
-              id: existing?.id
-            };
-          })
-        });
-      }
-    } catch (error) {
-      console.error('Error loading attempts:', error);
-      toast.error('Failed to load attempts');
-    }
-  };
 
   const handleAttemptChange = (liftType, index, field, value) => {
     setAttempts(prev => {
