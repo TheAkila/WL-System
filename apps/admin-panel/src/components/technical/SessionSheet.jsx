@@ -386,6 +386,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
           attempt_number: attemptData.attempt_number,
           weight: attemptData.weight || attemptData.requested_weight,
           result: attemptData.result || 'pending'
+          // edit_count removed to prevent potential 500 errors if backend table doesn't have it
         };
 
         console.log('📡 Sending to backend immediately:', payload);
@@ -419,7 +420,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
         console.error('Error response:', error.response?.data);
         console.error('Error status:', error.response?.status);
         console.error('Error message:', error.message);
-        toast.error('⚠️ Failed to save - ' + (error.response?.data?.message || error.message || 'Retry'));
+        // toast.error('⚠️ Failed to save - ' + (error.response?.data?.message || error.message || 'Retry'));
         // DO NOT refresh - data is already optimistically updated
       } finally {
         setSaving(false);

@@ -53,9 +53,9 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return;
     }
     
-    // Allow editing weight only if no result set yet (except not_attempted)
-    if (result !== null && result !== undefined && result !== 'not_attempted') {
-      return;
+    // Allow editing weight only if no result set yet (except pending or not_attempted)
+    if (result === 'good' || result === 'no_lift') {
+      return; // Cannot edit completed attempts normally
     }
     
     if (!isEditing) {
@@ -141,7 +141,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving attempt:', error);
-      toast.error('Failed to save weight');
+      // toast.error('Failed to save weight');
     }
   };
 
@@ -180,7 +180,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       toast.success(`Result: ${newResult === 'good' ? 'Good Lift ✓' : 'No Lift ✗'}`);
     } catch (error) {
       console.error('Error updating result:', error);
-      toast.error('Failed to update result');
+      // toast.error('Failed to update result');
     }
   };
 
@@ -198,7 +198,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       toast.success('✓ Good Lift');
     } catch (error) {
       console.error('Error marking good lift:', error);
-      toast.error('Failed to update result');
+      // toast.error('Failed to update result');
     }
   };
 
@@ -216,7 +216,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       toast.success('✗ No Lift');
     } catch (error) {
       console.error('Error marking no lift:', error);
-      toast.error('Failed to update result');
+      // toast.error('Failed to update result');
     }
   };
 
@@ -238,7 +238,7 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       toast.success('Marked as Not Attempted');
     } catch (error) {
       console.error('Error marking not attempted:', error);
-      toast.error('Failed to update');
+      // toast.error('Failed to update');
     }
   };
 
@@ -296,65 +296,61 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       ) : weight ? (
         <div className="w-full h-full flex items-center justify-center group relative">
           {/* Weight display - always visible and centered */}
-          <span className="font-bold text-base">
-            {weight}kg
+          <span className={`font-bold flex items-center justify-center ${result === 'no_lift' ? 'text-lg line-through decoration-red-600 dark:decoration-red-400 decoration-2' : 'text-lg'}`}>
+            {weight}
           </span>
+          
+          {/* Visual Markers for Results */}
+          {result === 'good' && (
+            <Check size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-green-700 dark:text-green-400 opacity-50 pointer-events-none" />
+          )}
+          {result === 'no_lift' && (
+            <X size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-red-800 dark:text-red-400 opacity-50 pointer-events-none" />
+          )}
           
           {/* Edit count indicator - always visible in top right */}
           {editCount > 0 && (
-            <span className="absolute top-1 right-1 text-[8px] font-bold opacity-70 bg-slate-300 dark:bg-slate-600 text-slate-800 dark:text-white px-1 rounded-full">
+            <span className="absolute bottom-1 left-1 text-[8px] font-bold opacity-70 bg-slate-300 dark:bg-slate-600 text-slate-800 dark:text-white px-1 rounded-full">
               {editCount}
             </span>
           )}
           
           {/* Admin decision buttons - only show on hover during pending state */}
           {result === 'pending' ? (
-            <div className="absolute flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 left-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   markGoodLift();
                 }}
-                className="px-2 py-0.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors font-bold text-xs"
+                className="w-5 h-5 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded shadow-sm transition-colors"
                 title="Mark as Good Lift"
               >
-                ✓
+                <Check size={12} strokeWidth={4} />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   markNoLift();
                 }}
-                className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded transition-colors font-bold text-xs"
+                className="w-5 h-5 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded shadow-sm transition-colors"
                 title="Mark as No Lift"
               >
-                ✗
+                <X size={12} strokeWidth={4} />
               </button>
-              {weight && (
-                <button
-                  className="p-0.5 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    markNotAttempted();
-                  }}
-                  title="Mark Not Attempted (N/A)"
-                >
-                  <SkipForward size={12} className="text-gray-600 dark:text-gray-300" />
-                </button>
-              )}
             </div>
           ) : (
-            <>
+            <div className="absolute top-1 left-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               {result === 'good' && (
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleResult();
                   }}
-                  className="text-lg hover:opacity-70 transition-opacity cursor-pointer opacity-0 group-hover:opacity-100"
-                  title="Click to change to No Lift"
+                  className="w-5 h-5 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded shadow-md transition-colors"
+                  title="Change to No Lift"
                 >
-                  ✓
+                  <X size={12} strokeWidth={4} />
                 </button>
               )}
               {result === 'no_lift' && (
@@ -363,13 +359,13 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
                     e.stopPropagation();
                     toggleResult();
                   }}
-                  className="text-lg hover:opacity-70 transition-opacity cursor-pointer opacity-0 group-hover:opacity-100"
-                  title="Click to change to Good Lift"
+                  className="w-5 h-5 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded shadow-md transition-colors"
+                  title="Change to Good Lift"
                 >
-                  ✗
+                  <Check size={12} strokeWidth={4} />
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       ) : (

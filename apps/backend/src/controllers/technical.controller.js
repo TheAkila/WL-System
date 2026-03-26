@@ -11,7 +11,7 @@ export const getSessionSheet = async (req, res, next) => {
     // Get all athletes in the session
     const { data: athletes, error: athletesError } = await db.supabase
       .from('athletes')
-      .select('*')
+      .select('*, team:teams(*)')
       .eq('session_id', sessionId)
       .order('start_number', { ascending: true });
 
