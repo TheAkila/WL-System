@@ -747,10 +747,12 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </div>
             </div>
             
-            {/* Centered logo in normal panel */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-0 pointer-events-none">
-              <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12" />
-            </div>
+            {/* Centered logo in normal panel - ONlY display if not in fullscreen mode to prevent duplicate logos */}
+            {!isFullscreen && (
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-0 pointer-events-none">
+                <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12" />
+              </div>
+            )}
 
             <div className="flex items-center gap-2.5 z-10 w-[200px] justify-end relative">
               <div className="h-5 w-px bg-slate-300 dark:bg-zinc-600 hidden sm:block"></div>
