@@ -680,8 +680,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
       {/* Fullscreen Header - Show only in fullscreen mode */}
       {isFullscreen && (
-        <div className="bg-white dark:bg-zinc-800 shadow-md p-2 sm:p-3 md:p-4 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-700">
-          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+        <div className="bg-white dark:bg-zinc-800 shadow-md p-2 sm:p-3 md:p-4 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-700 relative">
+          <div className="flex flex-col gap-0.5 min-w-0 flex-1 z-10">
             <h2 className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 truncate">
               {session?.competition?.name || 'Competition'}
             </h2>
@@ -689,13 +689,18 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               {session?.name || 'Session'}
             </h1>
           </div>
+
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden md:block z-0">
+            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-14" />
+          </div>
+
           {/* Timer in fullscreen header */}
           {nextLifter && (
-            <div className="flex items-center gap-2 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 whitespace-nowrap">
-             
-              <CompetitionTimer 
+            <div className="flex items-center gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 whitespace-nowrap z-10">
+              <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-8 md:hidden" />
+              <CompetitionTimer
                 key={timerKey}
-                duration={timerDuration} 
+                duration={timerDuration}
                 isRunning={timerRunning}
                 onStart={() => setTimerRunning(true)}
                 onPause={() => setTimerRunning(false)}
@@ -703,7 +708,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                   setTimerRunning(false);
                   setTimerKey(prev => prev + 1);
                 }}
-                compact={true} 
+                compact={true}
               />
             </div>
           )}
@@ -721,8 +726,8 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       {/* Next Lifter Panel - Live Update with Timer - Optimized for fullscreen */}
       {nextLifter && (
         <div className={`bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden ${isFullscreen ? 'mx-0 mt-2 mb-2 p-2 rounded-none' : 'mb-4'}`}>
-          <div className="flex items-center justify-between p-2">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between p-2 relative">
+            <div className="flex items-center gap-2.5 z-10">
               <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-xs font-medium">
                NEXT LIFTER
               </span>
@@ -743,9 +748,32 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </div>
             </div>
             
-            <div className="flex items-center gap-2.5">
-              <div className="h-5 w-px bg-slate-300 dark:bg-zinc-600"></div>
-              {/* IWF Timer Rule Indicator - shown in header */}
+            {/* Centered logo in normal panel */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-0 pointer-events-none">
+              <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12" />
+            </div>
+
+            <div className="flex items-center gap-2.5 z-10">
+              <div className="h-5 w-px bg-slate-300 dark:bg-zinc-600 hidden sm:block"></div>
+              {!isFullscreen && (
+                <div className="flex items-center gap-3">
+                  <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12 md:hidden" />
+                  <div className="scale-90 origin-right">
+                    <CompetitionTimer
+                      key={timerKey}
+                      duration={timerDuration}
+                      isRunning={timerRunning}
+                      onStart={() => setTimerRunning(true)}
+                      onPause={() => setTimerRunning(false)}
+                      onReset={() => {
+                        setTimerRunning(false);
+                        setTimerKey(prev => prev + 1);
+                      }}
+                      compact={true}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
