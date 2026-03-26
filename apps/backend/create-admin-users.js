@@ -30,7 +30,7 @@ async function createAdminUsers() {
   console.log('🔧 Creating admin users...\n');
 
   // Hash password
-  const password = 'password123';
+  const password = 'admin123';
   const passwordHash = await bcrypt.hash(password, 10);
 
   const users = [
@@ -49,7 +49,7 @@ async function createAdminUsers() {
             email: user.email,
             name: user.name,
             role: user.role,
-            password_hash: passwordHash,
+            password: passwordHash,
             is_active: true
           },
           {
@@ -84,7 +84,7 @@ async function createAdminUsers() {
     console.log('\n✅ Setup complete!\n');
     console.log('📝 Login credentials:');
     console.log('   Email: admin@test.com');
-    console.log('   Password: password123\n');
+    console.log('   Password: admin123\n');
   }
 }
 
