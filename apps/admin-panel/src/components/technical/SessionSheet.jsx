@@ -780,7 +780,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       )}
 
       {/* Spreadsheet Sheet - Optimized for fullscreen */}
-      <div className={`bg-white dark:bg-zinc-900 ${isFullscreen ? 'rounded-none shadow-none p-1 sm:p-2 flex-1 overflow-auto relative' : 'rounded-lg shadow-lg p-2 sm:p-3'}`}>
+      <div className={`bg-white dark:bg-zinc-900 ${isFullscreen ? 'rounded-none shadow-none p-1 sm:p-2 flex-1 overflow-hidden flex flex-col relative' : 'rounded-lg shadow-lg p-2 sm:p-3'}`}>
         {!isFullscreen && (
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="min-w-0">
@@ -824,8 +824,48 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
         {/* Spreadsheet Table */}
         {!loading && !error && (
+          <>
+            {isFullscreen && (
+              <style>{`
+                .perfect-fit-table td, .perfect-fit-table th {
+                  padding-top: max(0.2vh, 1px) !important;
+                  padding-bottom: max(0.2vh, 1px) !important;
+                  height: auto !important;
+                }
+                .perfect-fit-table .h-11 {
+                  height: auto !important;
+                }
+                .perfect-fit-table .p-2 {
+                  padding: 1px 2px !important;
+                }
+                .perfect-fit-table .p-3 {
+                  padding: 2px 4px !important;
+                }
+                .perfect-fit-table td .text-sm, .perfect-fit-table th .text-sm,
+                .perfect-fit-table td .text-xs, .perfect-fit-table th .text-xs {
+                  font-size: min(1.2vh, 0.875rem) !important;
+                  line-height: 1.1 !important;
+                }
+                .perfect-fit-table td .text-base, .perfect-fit-table th .text-base {
+                  font-size: min(1.3vh, 1rem) !important;
+                  line-height: 1.1 !important;
+                }
+                .perfect-fit-table td .text-lg, .perfect-fit-table input {
+                  font-size: min(1.4vh, 1.125rem) !important;
+                  line-height: 1.1 !important;
+                }
+                .perfect-fit-table td svg {
+                  width: min(1.4vh, 1.125rem) !important;
+                  height: min(1.4vh, 1.125rem) !important;
+                }
+                .perfect-fit-table input[type="checkbox"] {
+                  width: min(1.8vh, 1.25rem) !important;
+                  height: min(1.8vh, 1.25rem) !important;
+                }
+              `}</style>
+            )}
           <div className={`overflow-hidden ${isFullscreen ? 'h-full' : ''}`}>
-            <table className={`w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600 ${isFullscreen ? 'h-full' : ''}`}>
+            <table className={`w-full border-collapse bg-white dark:bg-zinc-900 table-fixed border-2 border-gray-400 dark:border-gray-600 ${isFullscreen ? 'h-full perfect-fit-table' : ''}`}>
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '150px' }} />
@@ -1009,6 +1049,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
