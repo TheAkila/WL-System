@@ -30,17 +30,17 @@ const teams = [
 ];
 
 const womenCategories = [
-  { weight: '49kg', name: '49kg Category' },
-  { weight: '55kg', name: '55kg Category' },
-  { weight: '59kg', name: '59kg Category' },
-  { weight: '64kg', name: '64kg Category' },
+  { weight: '48kg', name: '48kg Category' },
+  { weight: '53kg', name: '53kg Category' },
+  { weight: '58kg', name: '58kg Category' },
+  { weight: '63kg', name: '63kg Category' },
 ];
 
 const menCategories = [
-  { weight: '61kg', name: '61kg Category' },
-  { weight: '67kg', name: '67kg Category' },
-  { weight: '73kg', name: '73kg Category' },
-  { weight: '81kg', name: '81kg Category' },
+  { weight: '60kg', name: '60kg Category' },
+  { weight: '65kg', name: '65kg Category' },
+  { weight: '71kg', name: '71kg Category' },
+  { weight: '79kg', name: '79kg Category' },
 ];
 
 async function createComprehensiveTestData() {

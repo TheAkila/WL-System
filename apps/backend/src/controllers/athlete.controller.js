@@ -70,7 +70,9 @@ export const getAthletes = async (req, res, next) => {
     if (weightCategory) query = query.eq('weight_category', weightCategory);
 
     // Add pagination
-    query = query.order('start_number', { ascending: true })
+    query = query
+      .order('start_number', { ascending: true, nullsFirst: false })
+      .order('lot_number', { ascending: true, nullsFirst: false })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
     const { data, error, count } = await query;

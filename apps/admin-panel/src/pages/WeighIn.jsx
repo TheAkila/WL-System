@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
+const isAthleteWeighInCompleted = (athlete) => {
+  return Boolean(
+    athlete?.weigh_in_completed_at ||
+    (athlete?.body_weight && athlete?.opening_snatch && athlete?.opening_clean_jerk)
+  );
+};
+
 export default function WeighIn() {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [athletes, setAthletes] = useState([]);
@@ -81,14 +90,26 @@ export default function WeighIn() {
     if (!confirm('Assign random lot numbers to all athletes in this session?')) return;
 
     try {
-      const athletesNeedingLots = athletes.filter(a => !a.lot_number && a.weigh_in_completed_at);
-      
-      if (athletesNeedingLots.length === 0) {
+      const completedAthletes = athletes.filter(isAthleteWeighInCompleted);
+
+      if (completedAthletes.length === 0) {
         toast.error('No athletes have completed weigh-in yet');
         return;
       }
 
-      const lotNumbers = athletesNeedingLots.map((_, i) => i + 1);
+      const athletesNeedingLots = completedAthletes.filter((a) => !a.lot_number);
+      let targetAthletes = athletesNeedingLots;
+
+      // Allow re-draw if all completed athletes already have lot numbers.
+      if (athletesNeedingLots.length === 0) {
+        const shouldReassign = confirm(
+          'All completed athletes already have lot numbers. Reassign lot numbers for all completed athletes?'
+        );
+        if (!shouldReassign) return;
+        targetAthletes = completedAthletes;
+      }
+
+      const lotNumbers = targetAthletes.map((_, i) => i + 1);
       
       for (let i = lotNumbers.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -96,12 +117,12 @@ export default function WeighIn() {
       }
 
       await Promise.all(
-        athletesNeedingLots.map((athlete, index) =>
+        targetAthletes.map((athlete, index) =>
           api.put(`/athletes/${athlete.id}`, { lot_number: lotNumbers[index] })
         )
       );
 
-      toast.success('Lot numbers assigned successfully');
+      toast.success(`Lot numbers assigned for ${targetAthletes.length} athlete(s)`);
       fetchAthletes();
     } catch (error) {
       toast.error('Failed to assign lot numbers');
@@ -131,13 +152,19 @@ export default function WeighIn() {
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const weighedIn = filteredAthletes.filter((a) => a.weigh_in_completed_at).length;
+  const weighedIn = filteredAthletes.filter(isAthleteWeighInCompleted).length;
   const totalAthletes = filteredAthletes.length;
   const progressPercent = totalAthletes > 0 ? (weighedIn / totalAthletes) * 100 : 0;
 
   return (
     <div>
       <div className="mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 btn btn-secondary"
+        >
+          Back
+        </button>
         <h1 className="text-4xl font-heading font-bold text-slate-900 dark:text-white mb-2">
           Official Weigh-In
         </h1>
@@ -239,10 +266,11 @@ export default function WeighIn() {
                 <p className="text-slate-600 dark:text-zinc-400">No athletes found</p>
               </div>
             ) : (
-              filteredAthletes.map((athlete) => (
+              filteredAthletes.map((athlete, index) => (
                 <WeighInRow
                   key={athlete.id}
                   athlete={athlete}
+                  listIndex={index}
                   onComplete={handleCompleteWeighIn}
                   onClear={handleClearWeighIn}
                 />
@@ -255,8 +283,10 @@ export default function WeighIn() {
   );
 }
 
-function WeighInRow({ athlete, onComplete, onClear }) {
-  const [isEditing, setIsEditing] = useState(!athlete.weigh_in_completed_at);
+function WeighInRow({ athlete, listIndex, onComplete, onClear }) {
+  const isCompleted = isAthleteWeighInCompleted(athlete);
+  const displayNumber = athlete.lot_number || listIndex + 1;
+  const [isEditing, setIsEditing] = useState(!isCompleted);
   const [formData, setFormData] = useState({
     body_weight: athlete.body_weight || '',
     opening_snatch: athlete.opening_snatch || '',
@@ -333,8 +363,6 @@ function WeighInRow({ athlete, onComplete, onClear }) {
     setIsEditing(false);
   };
 
-  const isCompleted = athlete.weigh_in_completed_at;
-
   return (
     <div className={`card p-6 border-2 transition-all text-left rounded-xl ${
         isCompleted
@@ -346,7 +374,7 @@ function WeighInRow({ athlete, onComplete, onClear }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <h4 className="font-bold text-base text-slate-900 dark:text-white mb-3">
-              {athlete.name}
+              #{displayNumber} • {athlete.name}
             </h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -403,8 +431,11 @@ function WeighInRow({ athlete, onComplete, onClear }) {
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded">
+                #{displayNumber}
+              </span>
               <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                {athlete.start_number} {athlete.name}
+                {athlete.name}
               </h3>
               {isCompleted && <span className="inline-block px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded">COMPLETED</span>}
             </div>

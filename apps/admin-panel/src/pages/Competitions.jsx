@@ -295,7 +295,7 @@ export default function Competitions() {
             
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2">
-                Description
+                Competition Details (Website Description)
               </label>
               <textarea
                 placeholder="Description"

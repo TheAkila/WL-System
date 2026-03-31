@@ -8,6 +8,8 @@ import CompetitionTimer from './CompetitionTimer';
 import WeighInModal from './WeighInModal';
 import PhaseControlButtons from './PhaseControlButtons';
 
+const ENABLE_SYSTEM_RECOMMENDATION = false;
+
 export default function SessionSheet({ session: initialSession, onBack, onToggleFullscreen, isFullscreen }) {
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -321,8 +323,10 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       const withCalculations = calculateRankings(transformedAthletes);
       setAthletes(withCalculations);
       
-      // Calculate initial next lifter with current session state
-      const next = calculateNextLifter(withCalculations, session?.state);
+      // Temporarily disable recommendation integration and keep manual flow only.
+      const next = ENABLE_SYSTEM_RECOMMENDATION
+        ? calculateNextLifter(withCalculations, session?.state)
+        : null;
       setNextLifter(next);
       
     } catch (error) {
@@ -376,8 +380,10 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       const rankedAthletes = calculateRankings(updatedAthletes);
       setAthletes(rankedAthletes);
       
-      // Update next lifter after data entry with current session state
-      const next = calculateNextLifter(rankedAthletes, session?.state);
+      // Temporarily disable recommendation integration and keep manual flow only.
+      const next = ENABLE_SYSTEM_RECOMMENDATION
+        ? calculateNextLifter(rankedAthletes, session?.state)
+        : null;
       setNextLifter(next);
 
       // IMMEDIATE save to backend (no delay to prevent data loss)
@@ -460,6 +466,24 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to update DQ status');
       // DO NOT refresh - data is already optimistically updated, user should retry manually
+    }
+  };
+
+  const handleAthleteMetaUpdate = async (athleteId, updates) => {
+    // Optimistic local update
+    setAthletes(prev => {
+      const next = prev.map(a => a.id === athleteId ? { ...a, ...updates } : a);
+      return next;
+    });
+
+    try {
+      await api.put(`/athletes/${athleteId}`, updates);
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('❌ Error updating athlete meta:', error);
+      toast.error('Failed to update athlete');
+      // Reload to avoid stale state
+      fetchSessionData();
     }
   };
 
@@ -639,6 +663,15 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
     return { grouped, sortedClasses };
   };
 
+  const sortAthletesForDisplay = (list) => {
+    return list.slice().sort((a, b) => {
+      const orderA = (a.start_number ?? a.lot_number ?? Number.MAX_SAFE_INTEGER);
+      const orderB = (b.start_number ?? b.lot_number ?? Number.MAX_SAFE_INTEGER);
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  };
+
   return (
     <div className={`${isFullscreen ? 'h-screen w-screen overflow-hidden flex flex-col min-h-0' : 'min-h-screen'} bg-slate-100 dark:bg-zinc-900 ${isFullscreen ? 'p-0' : 'p-2'}`}>
       {/* Header - Hidden in fullscreen */}
@@ -725,7 +758,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden md:block z-0">
-            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-14" />
+            <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-14 sm:h-20" />
           </div>
 
           {/* Timer in fullscreen header (Temporarily commented out for space) */}
@@ -759,7 +792,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       )}
 
       {/* Next Lifter Panel - Live Update with Timer - Optimized for fullscreen */}
-      {nextLifter && (
+      {ENABLE_SYSTEM_RECOMMENDATION && nextLifter && (
         <div className={`bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden ${isFullscreen ? 'mx-0 mt-2 mb-2 p-2 rounded-none' : 'mb-4'}`}>
           <div className="flex items-center justify-between p-2 relative">
             <div className="flex items-center gap-2.5 z-10">
@@ -786,7 +819,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
             {/* Centered logo in normal panel - ONlY display if not in fullscreen mode to prevent duplicate logos */}
             {!isFullscreen && (
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-0 pointer-events-none">
-                <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-10 sm:h-12" />
+                <img src="/lifting-social-logo.svg" alt="Lifting Social" className="h-14 sm:h-16" />
               </div>
             )}
 
@@ -875,8 +908,9 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               } : undefined}
             >
               <colgroup>
-                <col style={{ width: '50px' }} />
-                <col style={{ width: '150px' }} />
+                <col style={{ width: '70px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '160px' }} />
                 <col style={{ width: '100px' }} />
                 <col style={{ width: '70px' }} />
                 <col style={{ width: '70px' }} />
@@ -892,15 +926,10 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </colgroup>
               <thead>
                 <tr className="bg-gray-200 dark:bg-gray-800 h-[52px]">
-                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
-                    No
-                  </th>
-                  <th rowSpan="2" className="p-3 text-left text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
-                    Name
-                  </th>
-                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
-                    Team
-                  </th>
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Lot #</th>
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Order</th>
+                  <th rowSpan="2" className="p-3 text-left text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Name</th>
+                  <th rowSpan="2" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">Team</th>
                   <th colSpan="4" className="p-3 text-center text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                     SNATCH
                   </th>
@@ -938,22 +967,43 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                       {/* Weight Class Section Header - Only show for multiple classes */}
                       {sortedClasses.length > 1 && (
                       <tr className="h-11 bg-black bg-opacity-10 dark:bg-black dark:bg-opacity-20 border-2 border-gray-400 dark:border-gray-600">
-                        <td colSpan="14" className="p-3 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
+                        <td colSpan="15" className="p-3 text-sm font-bold text-black dark:text-white border-2 border-gray-400 dark:border-gray-600">
                           {weightClass}kg Weight Class 
                         </td>
                       </tr>
                       )}
                       
                       {/* Athletes in this weight class */}
-                      {grouped[weightClass].map((athlete, classIndex) => {
+                      {sortAthletesForDisplay(grouped[weightClass]).map((athlete, classIndex) => {
                         globalIndex++;
                         const isEvenRow = classIndex % 2 === 0;
                         return (
                           <tr 
                             key={athlete.id} 
                             className={`${isFullscreen ? 'h-auto' : 'h-[52px]'} bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-b border-gray-300 dark:border-gray-700 overflow-hidden`}>
-                            <td className="p-2 text-sm font-bold text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
-                              {globalIndex}
+                            <td className="p-1 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              <input
+                                type="number"
+                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={athlete.lot_number ?? ''}
+                                min="1"
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                                  handleAthleteMetaUpdate(athlete.id, { lot_number: val });
+                                }}
+                              />
+                            </td>
+                            <td className="p-1 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
+                              <input
+                                type="number"
+                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={athlete.start_number ?? ''}
+                                min="1"
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                                  handleAthleteMetaUpdate(athlete.id, { start_number: val });
+                                }}
+                              />
                             </td>
                             <td className="p-2 text-sm font-semibold text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
                               <span className="truncate block">{athlete.name}</span>
@@ -975,7 +1025,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                     previousAttempts={athlete.attempts || []}
                                     forceEditMode={forceEditMode}
                                     isDQ={athlete.is_dq}
-                                    nextLifter={nextLifter}
+                                    nextLifter={ENABLE_SYSTEM_RECOMMENDATION ? nextLifter : null}
                                   />
                                 </div>
                               </td>
@@ -998,7 +1048,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                     previousAttempts={athlete.attempts || []}
                                     forceEditMode={forceEditMode}
                                     isDQ={athlete.is_dq}
-                                    nextLifter={nextLifter}
+                                    nextLifter={ENABLE_SYSTEM_RECOMMENDATION ? nextLifter : null}
                                   />
                                 </div>
                               </td>

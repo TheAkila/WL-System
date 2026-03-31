@@ -142,8 +142,8 @@ export default function Sessions() {
   // Get available weight classes based on gender
   const getWeightClasses = () => {
     return formData.gender === 'female'
-      ? ['49', '53', '57', '61', '69', '77', '86', '86+']
-      : ['60', '65', '70', '75', '85', '95', '110', '110+'];
+      ? ['48', '53', '58', '63', '69', '77', '86', '86+']
+      : ['60', '65', '71', '79', '88', '94', '110', '110+'];
   };
 
   // Handle weight class checkbox change

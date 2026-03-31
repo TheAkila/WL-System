@@ -32,8 +32,8 @@ const CompetitionWizard = () => {
     { number: 4, title: 'Review & Create', description: 'Confirm and create' },
   ];
 
-  const womenCategories = ['49kg', '55kg', '59kg', '64kg', '71kg', '76kg', '81kg', '+81kg'];
-  const menCategories = ['61kg', '67kg', '73kg', '81kg', '89kg', '96kg', '102kg', '+102kg'];
+  const womenCategories = ['48kg', '53kg', '58kg', '63kg', '69kg', '77kg', '86kg', '+86kg'];
+  const menCategories = ['60kg', '65kg', '71kg', '79kg', '88kg', '94kg', '110kg', '+110kg'];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
