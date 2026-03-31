@@ -704,7 +704,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </span>
             )}
             {!saving && lastSaved && (
-              <span className="flex items-center gap-1 text-xs sm:text-sm text-green-600 dark:text-green-400 font-semibold hidden sm:flex">
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs sm:text-sm text-green-600 dark:text-green-400 font-semibold">
                 <Check size={12} className="sm:w-3.5 sm:h-3.5" />
                 Saved
               </span>
@@ -984,7 +984,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             <td className="p-1 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
                               <input
                                 type="number"
-                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 value={athlete.lot_number ?? ''}
                                 min="1"
                                 onChange={(e) => {
@@ -996,7 +996,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             <td className="p-1 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
                               <input
                                 type="number"
-                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-full h-8 text-center bg-white dark:bg-zinc-800 border-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 value={athlete.start_number ?? ''}
                                 min="1"
                                 onChange={(e) => {
@@ -1015,7 +1015,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             
                             {/* Snatch Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`snatch-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-auto' : 'h-[52px]'} `}>
+                              <td key={`snatch-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative h-[52px]">
                                 <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}
@@ -1038,7 +1038,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
                             {/* Clean & Jerk Attempts */}
                             {[1, 2, 3].map(attemptNum => (
-                              <td key={`clean_and_jerk-${attemptNum}`} className={`border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative ${isFullscreen ? 'h-auto' : 'h-[52px]'} `}>
+                              <td key={`clean_and_jerk-${attemptNum}`} className="border-2 border-r border-gray-400 dark:border-gray-600 p-0 relative h-[52px]">
                                 <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
                                   <AttemptCell
                                     athlete={athlete}

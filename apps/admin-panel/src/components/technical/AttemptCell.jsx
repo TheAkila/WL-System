@@ -255,11 +255,11 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       return 'animate-pulse bg-blue-500 dark:bg-blue-700 text-blue-900 dark:text-blue-50 border-blue-700 font-bold ring-2 ring-blue-500';
     }
 
-    // If athlete is DQ'd, all attempts are red
-    if (athlete?.is_dq) {
-      return 'bg-red-400 dark:bg-red-900/75 text-red-900 dark:text-red-50 border-red-600 font-semibold';
+    // If athlete is DQ'd: keep existing attempt colors for completed attempts, but mark remaining/empty cells red
+    if (athlete?.is_dq && (!result || result === 'pending' || result === 'not_attempted')) {
+      return 'bg-red-500 dark:bg-red-800 text-white border-red-600 font-semibold';
     }
-    
+
     if (result === 'not_attempted') {
       return 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-semibold';
     }
@@ -297,17 +297,9 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
       ) : weight ? (
         <div className="w-full h-full flex items-center justify-center group relative">
           {/* Weight display - always visible and centered */}
-          <span className={`font-bold flex items-center justify-center ${result === 'no-lift' ? 'text-lg line-through decoration-white dark:decoration-red-400 decoration-2' : 'text-lg'}`}>
+          <span className="font-bold flex items-center justify-center text-lg">
             {weight}
           </span>
-          
-          {/* Visual Markers for Results */}
-          {result === 'good' && (
-            <Check size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-green-800 dark:text-green-400 opacity-50 pointer-events-none" />
-          )}
-          {result === 'no-lift' && (
-            <X size={18} strokeWidth={4} className="absolute right-1 bottom-1 text-white opacity-60 pointer-events-none" />
-          )}
           
           {/* Edit count indicator - always visible in top right */}
           {editCount > 0 && (
