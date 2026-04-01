@@ -30,8 +30,11 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
   const [availableWeightClasses, setAvailableWeightClasses] = useState([]); // Multi-class: all weight classes in session
   const [previousAthleteId, setPreviousAthleteId] = useState(null); // Track athlete ID for timer logic
   const [tableScale, setTableScale] = useState(1); // Scale sheet to fit fullscreen vertically
+  const [recommendationEnabled, setRecommendationEnabled] = useState(true); // Toggle system recommendation
   const tableWrapperRef = useRef(null);
   const tableRef = useRef(null);
+
+  const recommendationsOn = ENABLE_SYSTEM_RECOMMENDATION && recommendationEnabled;
 
   const sessionId = session?.id;
 
@@ -323,8 +326,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       const withCalculations = calculateRankings(transformedAthletes);
       setAthletes(withCalculations);
       
-      // Temporarily disable recommendation integration and keep manual flow only.
-      const next = ENABLE_SYSTEM_RECOMMENDATION
+      const next = recommendationsOn
         ? calculateNextLifter(withCalculations, session?.state)
         : null;
       setNextLifter(next);
@@ -380,8 +382,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       const rankedAthletes = calculateRankings(updatedAthletes);
       setAthletes(rankedAthletes);
       
-      // Temporarily disable recommendation integration and keep manual flow only.
-      const next = ENABLE_SYSTEM_RECOMMENDATION
+      const next = recommendationsOn
         ? calculateNextLifter(rankedAthletes, session?.state)
         : null;
       setNextLifter(next);
@@ -710,6 +711,17 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
               </span>
             )}
             <button
+              onClick={() => setRecommendationEnabled(prev => !prev)}
+              className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 md:py-2 text-xs md:text-sm rounded-lg transition-colors border ${recommendationsOn ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'} dark:${recommendationsOn ? 'bg-emerald-900/30 text-emerald-200 border-emerald-800' : 'bg-zinc-800 text-zinc-200 border-zinc-700'}`}
+              title="Toggle next-lifter recommendation"
+            >
+              <span className="hidden sm:inline">Recommendation</span>
+              <span className="sm:hidden">Reco</span>
+              <div className={`w-8 h-4 rounded-full relative ${recommendationsOn ? 'bg-emerald-500' : 'bg-slate-400'} transition-colors`}>
+                <div className={`absolute top-[2px] ${recommendationsOn ? 'left-[18px]' : 'left-[2px]'} w-3.5 h-3.5 rounded-full bg-white shadow transition-all`} />
+              </div>
+            </button>
+            <button
               onClick={onToggleFullscreen}
               className="flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 md:py-2 text-xs md:text-sm bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg transition-colors"
               title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -792,7 +804,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       )}
 
       {/* Next Lifter Panel - Live Update with Timer - Optimized for fullscreen */}
-      {ENABLE_SYSTEM_RECOMMENDATION && nextLifter && (
+      {recommendationsOn && nextLifter && (
         <div className={`bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-slate-200 dark:border-zinc-700 print:hidden ${isFullscreen ? 'mx-0 mt-2 mb-2 p-2 rounded-none' : 'mb-4'}`}>
           <div className="flex items-center justify-between p-2 relative">
             <div className="flex items-center gap-2.5 z-10">
@@ -1025,7 +1037,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                     previousAttempts={athlete.attempts || []}
                                     forceEditMode={forceEditMode}
                                     isDQ={athlete.is_dq}
-                                    nextLifter={ENABLE_SYSTEM_RECOMMENDATION ? nextLifter : null}
+                                    nextLifter={recommendationsOn ? nextLifter : null}
                                   />
                                 </div>
                               </td>
@@ -1048,7 +1060,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                     previousAttempts={athlete.attempts || []}
                                     forceEditMode={forceEditMode}
                                     isDQ={athlete.is_dq}
-                                    nextLifter={ENABLE_SYSTEM_RECOMMENDATION ? nextLifter : null}
+                                    nextLifter={recommendationsOn ? nextLifter : null}
                                   />
                                 </div>
                               </td>

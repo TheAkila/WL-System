@@ -72,8 +72,22 @@ export default function AttemptCell({ athlete, attemptType, attemptNumber, onUpd
     const weightValue = inputValue ? parseFloat(inputValue) : null;
     
     if (weightValue === null || weightValue === 0) {
-      setInputValue('');
-      setIsEditing(false);
+      try {
+        if (attempt) {
+          const clearedAttempt = {
+            ...attempt,
+            weight: null,
+            requested_weight: null,
+            result: null
+          };
+          await onUpdate(clearedAttempt);
+        }
+      } catch (error) {
+        console.error('Error clearing attempt:', error);
+      } finally {
+        setInputValue('');
+        setIsEditing(false);
+      }
       return;
     }
 
