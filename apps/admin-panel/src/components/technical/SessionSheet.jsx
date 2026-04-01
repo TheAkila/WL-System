@@ -712,14 +712,16 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
             )}
             <button
               onClick={() => setRecommendationEnabled(prev => !prev)}
-              className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 md:py-2 text-xs md:text-sm rounded-lg transition-colors border ${recommendationsOn ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'} dark:${recommendationsOn ? 'bg-emerald-900/30 text-emerald-200 border-emerald-800' : 'bg-zinc-800 text-zinc-200 border-zinc-700'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-full border transition-colors ${recommendationsOn
+                ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                : 'bg-slate-50 text-slate-900 border-slate-400 hover:bg-slate-100 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-700'}`}
               title="Toggle next-lifter recommendation"
             >
               <span className="hidden sm:inline">Recommendation</span>
               <span className="sm:hidden">Reco</span>
-              <div className={`w-8 h-4 rounded-full relative ${recommendationsOn ? 'bg-emerald-500' : 'bg-slate-400'} transition-colors`}>
-                <div className={`absolute top-[2px] ${recommendationsOn ? 'left-[18px]' : 'left-[2px]'} w-3.5 h-3.5 rounded-full bg-white shadow transition-all`} />
-              </div>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${recommendationsOn ? 'bg-white/15 text-white border-white/30' : 'bg-white text-slate-800 border-slate-300 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600'}`}>
+                {recommendationsOn ? 'On' : 'Off'}
+              </span>
             </button>
             <button
               onClick={onToggleFullscreen}
