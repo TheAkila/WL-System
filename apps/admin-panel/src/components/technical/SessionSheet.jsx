@@ -8,7 +8,7 @@ import CompetitionTimer from './CompetitionTimer';
 import WeighInModal from './WeighInModal';
 import PhaseControlButtons from './PhaseControlButtons';
 
-const ENABLE_SYSTEM_RECOMMENDATION = false;
+const ENABLE_SYSTEM_RECOMMENDATION = true;
 
 export default function SessionSheet({ session: initialSession, onBack, onToggleFullscreen, isFullscreen }) {
   const [athletes, setAthletes] = useState([]);
