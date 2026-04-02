@@ -544,6 +544,40 @@ router.delete('/:registrationId', protect, authorize('admin'), async (req, res) 
     }
     
     console.log('✅ Registration found, deleting...');
+
+    // If admin declines an initial registration via delete, notify the user.
+    if (registration.user_id && registration.competition_id && ['pending', 'registered'].includes(registration.status)) {
+      try {
+        const { data: user } = await supabase
+          .from('website_users')
+          .select('id, email, name')
+          .eq('id', registration.user_id)
+          .single();
+
+        const { data: competition } = await supabase
+          .from('competitions')
+          .select('id, name')
+          .eq('id', registration.competition_id)
+          .single();
+
+        if (user?.email && competition?.name) {
+          const { default: sendCompetitionEmail } = await import('../services/competitionEmailService.js');
+
+          await sendCompetitionEmail.sendEntryDeclined({
+            userEmail: user.email,
+            athleteName: user.name || registration.athlete_name || 'Athlete',
+            competitionName: competition.name,
+            entryType: 'registration',
+            reason: 'Your registration was declined by the admin.',
+            canResubmit: false
+          });
+
+          console.log('✅ Registration declined email sent to:', user.email);
+        }
+      } catch (emailError) {
+        console.error('⚠️ Failed to send registration declined email before delete:', emailError);
+      }
+    }
     
     // Delete the registration
     const { error: deleteError } = await supabase
