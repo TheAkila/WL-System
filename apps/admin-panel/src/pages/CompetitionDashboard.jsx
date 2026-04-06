@@ -12,6 +12,7 @@ const CompetitionDashboard = () => {
     completedSessions: 0,
     totalSessions: 0,
   });
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,13 @@ const CompetitionDashboard = () => {
         );
         const statsData = await statsRes.json();
         setStats(statsData.data || {});
+
+        // Fetch session states to decide whether live controls should be enabled
+        const sessionsRes = await fetch('http://localhost:5000/api/sessions', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const sessionsData = await sessionsRes.json();
+        setSessions(sessionsData.data || []);
       }
     } catch (error) {
       console.error('Error fetching competition:', error);
@@ -112,6 +120,14 @@ const CompetitionDashboard = () => {
     };
     return badges[status] || badges.pending;
   };
+
+  const LIVE_READY_STATES = ['ready_to_start', 'active', 'snatch_active', 'snatch_complete', 'clean_jerk_active'];
+  const LIVE_READY_STATUSES = ['in-progress'];
+  const canOpenTechnicalPanel = sessions.some((s) => {
+    const state = (s.state || '').toLowerCase();
+    const status = (s.status || '').toLowerCase();
+    return LIVE_READY_STATES.includes(state) || LIVE_READY_STATUSES.includes(status);
+  });
 
   if (loading) {
     return (
@@ -207,11 +223,16 @@ const CompetitionDashboard = () => {
                           if (stage.number === 1) navigate('/competitions');
                           else if (stage.number === 2) navigate('/athletes');
                           else if (stage.number === 3) navigate('/sessions');
-                          else if (stage.number === 4) navigate('/technical');
+                          else if (stage.number === 4 && canOpenTechnicalPanel) navigate('/technical');
                           else if (stage.number === 5) navigate('/results');
                           else if (stage.number === 6) navigate('/reports');
                         }}
-                        className="ml-4 px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors whitespace-nowrap"
+                        disabled={stage.number === 4 && !canOpenTechnicalPanel}
+                        className={`ml-4 px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                          stage.number === 4 && !canOpenTechnicalPanel
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        }`}
                       >
                         {stage.action}
                       </button>
@@ -234,10 +255,18 @@ const CompetitionDashboard = () => {
                 <p className="text-sm text-gray-600">Upload CSV file with athlete data</p>
               </button>
               
-              <button className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow text-left group">
+              <button
+                onClick={() => canOpenTechnicalPanel && navigate('/technical')}
+                disabled={!canOpenTechnicalPanel}
+                className={`bg-white rounded-lg shadow p-6 text-left group transition-shadow ${
+                  canOpenTechnicalPanel ? 'hover:shadow-lg' : 'opacity-60 cursor-not-allowed'
+                }`}
+              >
                 <AlertCircle className="w-8 h-8 text-indigo-600 mb-3 group-hover:scale-110 transition-transform" />
                 <h4 className="font-semibold text-gray-900 mb-1">Run Live Session</h4>
-                <p className="text-sm text-gray-600">Start recording attempt results</p>
+                <p className="text-sm text-gray-600">
+                  {canOpenTechnicalPanel ? 'Start recording attempt results' : 'Available once a session is started'}
+                </p>
               </button>
               
               <button className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow text-left group">
