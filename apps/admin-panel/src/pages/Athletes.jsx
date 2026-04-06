@@ -154,8 +154,8 @@ export default function Athletes() {
     if (!formData.session_id) {
       // If no session selected, show all classes for current gender
       return formData.gender === 'female'
-        ? ['45', '49', '55', '59', '64', '71', '76', '81', '87', '87+']
-        : ['55', '61', '67', '73', '81', '89', '96', '102', '109', '109+'];
+        ? ['48', '53', '58', '63', '69', '77', '86', '86+']
+        : ['60', '65', '71', '79', '88', '94', '110', '110+'];
     }
 
     // Get the selected session
