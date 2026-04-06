@@ -1,5 +1,6 @@
 import timerService from '../services/timerService.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { syncLiveStateFromSession } from '../services/liftingSocialSync.service.js';
 
 /**
  * Get current timer state for a session
@@ -29,6 +30,11 @@ export const startTimer = async (req, res, next) => {
     const io = req.app.get('io');
     const timer = timerService.startTimer(sessionId, io, duration, mode);
 
+    syncLiveStateFromSession(sessionId, {
+      running: true,
+      remaining: timer.timeRemaining,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Timer started',
@@ -48,6 +54,11 @@ export const pauseTimer = async (req, res, next) => {
 
     const io = req.app.get('io');
     const timer = timerService.pauseTimer(sessionId, io);
+
+    syncLiveStateFromSession(sessionId, {
+      running: false,
+      remaining: timer.timeRemaining,
+    });
 
     res.status(200).json({
       success: true,
@@ -69,6 +80,11 @@ export const resetTimer = async (req, res, next) => {
 
     const io = req.app.get('io');
     const timer = timerService.resetTimer(sessionId, io, duration || 60, mode || 'attempt');
+
+    syncLiveStateFromSession(sessionId, {
+      running: false,
+      remaining: timer.timeRemaining,
+    });
 
     res.status(200).json({
       success: true,
@@ -94,6 +110,11 @@ export const setPreset = async (req, res, next) => {
 
     const io = req.app.get('io');
     const timer = timerService.setPreset(sessionId, io, preset);
+
+    syncLiveStateFromSession(sessionId, {
+      running: false,
+      remaining: timer.timeRemaining,
+    });
 
     res.status(200).json({
       success: true,

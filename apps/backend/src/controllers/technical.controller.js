@@ -1,6 +1,11 @@
 import db from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 import timerService from '../services/timerService.js';
+import {
+  syncCompetitionStatusBySession,
+  syncLiveStateFromSession,
+  syncLiveResult,
+} from '../services/liftingSocialSync.service.js';
 
 // Get session sheet with athletes and their attempts
 // Auto-creates first attempts from opening declarations if they don't exist
@@ -286,6 +291,12 @@ export const declareAttempt = async (req, res, next) => {
     // Emit socket event
     io.emit('attempt:created', attempt);
 
+    // Sync current live state to website (best-effort)
+    syncLiveStateFromSession(sessionId, {
+      running: true,
+      remaining: timerDuration,
+    });
+
     res.status(201).json({
       success: true,
       data: attempt,
@@ -364,6 +375,7 @@ export const recordRefereeDecision = async (req, res, next) => {
     // If result is finalized, emit additional event
     if (attempt.result !== 'pending') {
       req.app.get('io').emit('attempt:validated', attempt);
+      syncLiveResult(attempt);
     }
 
     res.status(200).json({
@@ -438,6 +450,7 @@ export const recordQuickDecision = async (req, res, next) => {
     // Emit socket events
     req.app.get('io').emit('attempt:updated', attempt);
     req.app.get('io').emit('attempt:validated', attempt);
+    syncLiveResult(attempt);
 
     res.status(200).json({
       success: true,
@@ -496,6 +509,7 @@ export const recordJuryOverride = async (req, res, next) => {
     });
     
     io.to(`session:${attempt.session_id}`).emit('attempt:validated', attempt);
+    syncLiveResult(attempt);
 
     res.status(200).json({
       success: true,
@@ -602,6 +616,13 @@ export const updateSessionStatus = async (req, res, next) => {
       console.log('📡 Emitted session:updated event');
     }
 
+    // Sync competition status and live state to website (best-effort)
+    syncCompetitionStatusBySession(sessionId, status);
+    syncLiveStateFromSession(sessionId, {
+      running: status === 'in-progress',
+      remaining: null,
+    });
+
     res.status(200).json({
       success: true,
       data,
@@ -633,6 +654,12 @@ export const changeCurrentLift = async (req, res, next) => {
 
     // Emit socket event
     req.app.get('io').emit('session:updated', data);
+
+    // Sync live state to website (best-effort)
+    syncLiveStateFromSession(sessionId, {
+      running: false,
+      remaining: null,
+    });
 
     res.status(200).json({
       success: true,

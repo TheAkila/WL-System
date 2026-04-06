@@ -1,5 +1,6 @@
 import db from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { syncFinalResultsForSession } from '../services/liftingSocialSync.service.js';
 
 /**
  * Process session results and calculate rankings
@@ -94,6 +95,9 @@ export const processSessionResults = async (req, res, next) => {
 
       if (error) throw error;
     }
+
+    // Sync final results to website (best-effort)
+    syncFinalResultsForSession(sessionId);
 
     res.status(200).json({
       success: true,
