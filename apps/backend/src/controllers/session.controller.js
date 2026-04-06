@@ -1,5 +1,6 @@
 import { supabase } from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { syncSessionCatalogByCompetition } from '../services/liftingSocialSync.service.js';
 
 /**
  * Auto-assign athletes to a session based on weight category and gender
@@ -193,6 +194,11 @@ export const createSession = async (req, res, next) => {
     if (error) throw new AppError(error.message, 400);
 
     const newSession = data[0];
+
+    // Sync session catalog to website live selectors (best-effort)
+    if (newSession?.competition_id) {
+      syncSessionCatalogByCompetition(newSession.competition_id);
+    }
     
     // 🤖 AUTO-ASSIGN ATHLETES TO SESSION
     try {
@@ -238,6 +244,11 @@ export const updateSession = async (req, res, next) => {
 
     const updatedSession = data[0];
     console.log('✅ Session updated successfully:', { sessionId: updatedSession.id, newStatus: updatedSession.status });
+
+    // Sync updated session catalog to website live selectors (best-effort)
+    if (updatedSession?.competition_id) {
+      syncSessionCatalogByCompetition(updatedSession.competition_id);
+    }
     
     // 🤖 AUTO-REASSIGN ATHLETES if weight category or gender changed
     if (req.body.weight_category || req.body.weight_classes || req.body.gender) {

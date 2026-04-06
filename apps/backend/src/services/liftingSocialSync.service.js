@@ -1,6 +1,23 @@
 import { supabase } from '../config/supabase.js';
 
-const BASE_URL = process.env.LIFTING_SOCIAL_API_URL || 'http://localhost:3001';
+const normalizeBaseUrl = (value) => (value || '').trim().replace(/\/+$/, '').replace(/\/api$/, '');
+
+const parseSyncTargets = () => {
+  // Preferred: explicit backend API URLs (comma-separated for failover)
+  const configured = process.env.LIFTING_SOCIAL_BACKEND_URLS || process.env.LIFTING_SOCIAL_BACKEND_URL || process.env.LIFTING_SOCIAL_API_URL || '';
+  const candidates = configured
+    .split(',')
+    .map((item) => normalizeBaseUrl(item))
+    .filter(Boolean);
+
+  if (candidates.length > 0) {
+    return Array.from(new Set(candidates));
+  }
+
+  return ['http://localhost:5000'];
+};
+
+const SYNC_TARGETS = parseSyncTargets();
 const API_KEY = process.env.SYNC_API_KEY || 'dev-key';
 
 const mapStatusToWebsite = (status) => {
@@ -37,27 +54,32 @@ const getRefereeDecisionCode = (attempt) => {
 };
 
 const postToWebsite = async (path, method = 'POST', payload = null) => {
-  try {
-    const response = await fetch(`${BASE_URL}${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: payload ? JSON.stringify(payload) : undefined,
-    });
+  for (const target of SYNC_TARGETS) {
+    const url = `${target}${path}`;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.warn(`⚠️ Lifting Social sync failed [${method} ${path}]`, response.status, errorText);
-      return null;
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`⚠️ Lifting Social sync failed [${method} ${url}]`, response.status, errorText);
+        continue;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.warn(`⚠️ Lifting Social sync error [${method} ${url}]`, error.message);
     }
-
-    return await response.json();
-  } catch (error) {
-    console.warn(`⚠️ Lifting Social sync error [${method} ${path}]`, error.message);
-    return null;
   }
+
+  return null;
 };
 
 const getSessionContext = async (sessionId) => {
@@ -192,4 +214,26 @@ export const syncFinalResultsForSession = async (sessionId) => {
     wl_competition_id: context.wlCompetitionId,
     results,
   });
+};
+
+export const syncSessionCatalogByCompetition = async (competitionId) => {
+  if (!competitionId) return null;
+
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('id, name, session_number, group_number, status')
+    .eq('competition_id', competitionId)
+    .order('session_number', { ascending: true });
+
+  return postToWebsite('/api/wl-system/sync/sessions', 'POST', {
+    wl_competition_id: competitionId,
+    sessions: sessions || [],
+  });
+};
+
+export const syncSessionCatalogBySession = async (sessionId) => {
+  const context = await getSessionContext(sessionId);
+  if (!context) return null;
+
+  return syncSessionCatalogByCompetition(context.wlCompetitionId);
 };

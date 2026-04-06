@@ -74,8 +74,11 @@ const syncCompetitionToWebsite = async (competition) => {
     };
 
     // Make the sync request to lifting-social-backend
+    const rawBaseUrl = process.env.LIFTING_SOCIAL_API_URL || 'http://localhost:5000';
+    const syncBaseUrl = rawBaseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+
     const response = await fetch(
-      `${process.env.LIFTING_SOCIAL_API_URL || 'http://localhost:3001'}/api/wl-system/sync/competition`,
+      `${syncBaseUrl}/api/wl-system/sync/competition`,
       {
         method: 'POST',
         headers: {

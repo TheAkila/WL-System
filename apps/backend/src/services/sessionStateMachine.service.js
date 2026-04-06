@@ -6,8 +6,27 @@
  */
 
 import { supabase } from '../config/supabase.js';
+import {
+  syncCompetitionStatusBySession,
+  syncLiveStateFromSession,
+  syncSessionCatalogBySession,
+} from './liftingSocialSync.service.js';
 
 export class SessionStateMachine {
+  static async triggerWebsiteLiveSync(sessionId, newState) {
+    try {
+      await syncSessionCatalogBySession(sessionId);
+      await syncCompetitionStatusBySession(sessionId, newState);
+      await syncLiveStateFromSession(sessionId, {
+        running: ['active', 'snatch_active', 'clean_jerk_active'].includes(newState),
+        remaining: null,
+      });
+    } catch (syncError) {
+      // Do not block state transitions for external sync failures.
+      console.warn('⚠️ Failed to sync session state to website live system:', syncError?.message || syncError);
+    }
+  }
+
   /**
    * State machine configuration
    * Defines valid transitions and button availability
@@ -149,6 +168,8 @@ export class SessionStateMachine {
       if (!data) {
         throw new Error('Failed to update session state');
       }
+
+      await this.triggerWebsiteLiveSync(sessionId, newState);
 
       return {
         success: true,
