@@ -45,6 +45,27 @@ const mapDecisionToResult = (decision) => {
   return decision || 'no_lift';
 };
 
+const resolveAttemptOutcome = (attempt) => {
+  const raw = String(attempt?.result || '').toLowerCase().trim();
+  if (raw && raw !== 'pending') return raw;
+
+  const decisions = [attempt?.referee_left, attempt?.referee_center, attempt?.referee_right]
+    .map((d) => String(d || '').toLowerCase().trim())
+    .filter((d) => d === 'good' || d === 'no-lift');
+
+  if (decisions.length < 2) {
+    return raw || 'pending';
+  }
+
+  const goodVotes = decisions.filter((d) => d === 'good').length;
+  const noLiftVotes = decisions.filter((d) => d === 'no-lift').length;
+
+  if (goodVotes >= 2) return 'good';
+  if (noLiftVotes >= 2) return 'no-lift';
+
+  return raw || 'pending';
+};
+
 const getRefereeDecisionCode = (attempt) => {
   const refs = [attempt.referee_left, attempt.referee_center, attempt.referee_right].filter(Boolean);
   if (!refs.length) return null;
@@ -168,13 +189,15 @@ export const syncLiveStateFromSession = async (sessionId, timerData = {}) => {
 export const syncLiveResult = async (attempt) => {
   if (!attempt?.session?.competition_id || !attempt?.athlete_id) return null;
 
+  const resolvedOutcome = resolveAttemptOutcome(attempt);
+
   const payload = {
     wl_competition_id: attempt.session.competition_id,
     wl_athlete_id: attempt.athlete?.registration_id || attempt.athlete_id,
     attempt_type: mapLiftTypeToWebsite(attempt.lift_type),
     attempt_number: attempt.attempt_number,
     weight: attempt.weight,
-    result: mapDecisionToResult(attempt.result),
+    result: mapDecisionToResult(resolvedOutcome),
     referee_decision: getRefereeDecisionCode(attempt),
     timestamp: attempt.timestamp || new Date().toISOString(),
   };
