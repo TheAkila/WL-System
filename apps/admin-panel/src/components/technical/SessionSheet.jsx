@@ -1098,15 +1098,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                                   type="checkbox"
                                   checked={athlete.is_dq || false}
                                   onChange={(e) => {
-                                    const newAthletes = athletes.map(a =>
-                                      a.id === athlete.id ? { ...a, is_dq: e.target.checked } : a
-                                    );
-                                    setAthletes(newAthletes);
-                                    fetch('/api/athletes/' + athlete.id, {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ is_dq: e.target.checked })
-                                    });
+                                    handleDQToggle(athlete.id, e.target.checked);
                                   }}
                                   className="w-5 h-5 cursor-pointer accent-gray-400"
                                 />

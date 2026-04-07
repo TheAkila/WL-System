@@ -237,3 +237,20 @@ export const syncSessionCatalogBySession = async (sessionId) => {
 
   return syncSessionCatalogByCompetition(context.wlCompetitionId);
 };
+
+export const syncAthleteStatus = async (athlete) => {
+  if (!athlete) return null;
+
+  let wlCompetitionId = null;
+  if (athlete.session_id) {
+    const context = await getSessionContext(athlete.session_id);
+    wlCompetitionId = context?.wlCompetitionId || null;
+  }
+
+  return postToWebsite('/api/wl-system/sync/athlete-status', 'POST', {
+    wl_competition_id: wlCompetitionId,
+    wl_athlete_id: athlete.registration_id || athlete.id,
+    is_dq: athlete.is_dq === true,
+    lot_number: athlete.lot_number ?? athlete.start_number ?? null,
+  });
+};

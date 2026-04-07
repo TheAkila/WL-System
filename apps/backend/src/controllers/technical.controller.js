@@ -5,6 +5,7 @@ import {
   syncCompetitionStatusBySession,
   syncLiveStateFromSession,
   syncLiveResult,
+  syncAthleteStatus,
 } from '../services/liftingSocialSync.service.js';
 
 // Get session sheet with athletes and their attempts
@@ -352,10 +353,18 @@ export const recordRefereeDecision = async (req, res, next) => {
         
         if (allFailed) {
           // Auto-disqualify athlete
-          await db.supabase
+          const { data: updatedAthlete } = await db.supabase
             .from('athletes')
             .update({ is_dq: true })
-            .eq('id', attempt.athlete_id);
+            .eq('id', attempt.athlete_id)
+            .select('*')
+            .single();
+
+          if (updatedAthlete) {
+            syncAthleteStatus(updatedAthlete).catch((syncError) => {
+              console.warn('Failed to sync auto-DQ athlete status:', syncError?.message || syncError);
+            });
+          }
           
           // Emit DQ notification
           req.app.get('io').emit('athlete:disqualified', {
@@ -430,10 +439,18 @@ export const recordQuickDecision = async (req, res, next) => {
         
         if (allFailed) {
           // Auto-disqualify athlete
-          await db.supabase
+          const { data: updatedAthlete } = await db.supabase
             .from('athletes')
             .update({ is_dq: true })
-            .eq('id', attempt.athlete_id);
+            .eq('id', attempt.athlete_id)
+            .select('*')
+            .single();
+
+          if (updatedAthlete) {
+            syncAthleteStatus(updatedAthlete).catch((syncError) => {
+              console.warn('Failed to sync auto-DQ athlete status:', syncError?.message || syncError);
+            });
+          }
           
           // Emit DQ notification
           req.app.get('io').emit('athlete:disqualified', {

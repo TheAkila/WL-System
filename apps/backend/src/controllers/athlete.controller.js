@@ -1,5 +1,6 @@
 import { supabase } from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { syncAthleteStatus } from '../services/liftingSocialSync.service.js';
 
 // IWF Weight Categories (2024 Rules)
 const WEIGHT_CATEGORIES = {
@@ -240,6 +241,18 @@ export const updateAthlete = async (req, res, next) => {
 
     if (error) throw new AppError(error.message, 400);
     if (!data || data.length === 0) throw new AppError('Athlete not found', 404);
+
+    // Best-effort sync for fields that affect public live scoreboard display.
+    if (
+      Object.prototype.hasOwnProperty.call(updateData, 'is_dq') ||
+      Object.prototype.hasOwnProperty.call(updateData, 'lot_number') ||
+      Object.prototype.hasOwnProperty.call(updateData, 'start_number') ||
+      Object.prototype.hasOwnProperty.call(updateData, 'registration_id')
+    ) {
+      syncAthleteStatus(data[0]).catch((syncError) => {
+        console.warn('Failed to sync athlete status to website:', syncError?.message || syncError);
+      });
+    }
 
     res.status(200).json({
       success: true,
