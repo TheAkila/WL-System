@@ -9,6 +9,8 @@ import Competitions from './pages/Competitions';
 import Athletes from './pages/Athletes';
 import Sessions from './pages/Sessions';
 import TechnicalPanel from './pages/TechnicalPanel';
+import VenueScreen from './pages/VenueScreen';
+import VenueDisplay from './pages/VenueDisplay';
 import Teams from './pages/Teams';
 import WeighIn from './pages/WeighIn';
 import UserManagement from './pages/UserManagement';
@@ -21,6 +23,14 @@ const router = createBrowserRouter(
     {
       path: '/login',
       element: <LoginPage />,
+    },
+    {
+      path: '/venue-display/:sessionId',
+      element: (
+        <ProtectedRoute roles={['admin', 'technical']}>
+          <VenueDisplay />
+        </ProtectedRoute>
+      ),
     },
     {
       path: '/',
@@ -61,6 +71,10 @@ const router = createBrowserRouter(
         {
           path: 'technical',
           element: <TechnicalPanel />,
+        },
+        {
+          path: 'venue-screen',
+          element: <VenueScreen />,
         },
         {
           path: 'users',
