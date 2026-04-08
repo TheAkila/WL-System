@@ -38,6 +38,28 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
 
   const sessionId = session?.id;
 
+  const getAthleteTeamCode = (athlete) => {
+    const team = athlete?.team || athlete?.teams;
+
+    return (
+      team?.code ||
+      team?.country_code ||
+      team?.country ||
+      athlete?.team_code ||
+      athlete?.country_code ||
+      athlete?.country ||
+      '-'
+    );
+  };
+
+  const hasCompletedWeighIn = (athlete) => {
+    return Boolean(
+      athlete?.weigh_in_completed_at ||
+      athlete?.weighed_in ||
+      athlete?.weigh_in_status === 'completed'
+    );
+  };
+
   // Calculate best lifts and totals for each athlete
   const calculateResults = (athletesData) => {
     return athletesData.map(athlete => {
@@ -315,15 +337,18 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
         };
       });
       
+      const weighedInAthletes = transformedAthletes.filter(hasCompletedWeighIn);
+
       console.log('📊 Athletes loaded:', transformedAthletes.length);
+      console.log('⚖️ Weigh-in completed athletes:', weighedInAthletes.length);
       
       // Extract available weight classes from athletes (for reference only, not for filtering)
-      const uniqueWeightClasses = [...new Set(transformedAthletes.map(a => a.weight_category))].sort();
+      const uniqueWeightClasses = [...new Set(weighedInAthletes.map(a => a.weight_category))].sort();
       setAvailableWeightClasses(uniqueWeightClasses);
       
       // Don't filter by weight class - show all classes in one sheet
       
-      const withCalculations = calculateRankings(transformedAthletes);
+      const withCalculations = calculateRankings(weighedInAthletes);
       setAthletes(withCalculations);
       
       const next = recommendationsOn
@@ -551,7 +576,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
         },
         athletes: athletes.map(a => ({
           name: a.name,
-          team: a.teams?.country || a.country,
+          team: getAthleteTeamCode(a),
           bodyweight: a.bodyweight,
           snatch: [1, 2, 3].map(num => {
             const attempt = a.attempts?.find(at => at.lift_type === 'snatch' && at.attempt_number === num);
@@ -647,7 +672,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
   // Group athletes by weight class in ascending order
   const getAthletesGroupedByClass = () => {
     const grouped = {};
-    athletes.forEach(athlete => {
+    athletes.filter(hasCompletedWeighIn).forEach(athlete => {
       const wc = athlete.weight_category;
       if (!grouped[wc]) {
         grouped[wc] = [];
@@ -1024,7 +1049,7 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
                             
                             </td>
                             <td className="p-2 text-sm text-center text-black dark:text-white border-2 border-r border-gray-400 dark:border-gray-600">
-                              {athlete.teams?.country || athlete.country || '-'}
+                              {getAthleteTeamCode(athlete)}
                             </td>
                             
                             {/* Snatch Attempts */}
