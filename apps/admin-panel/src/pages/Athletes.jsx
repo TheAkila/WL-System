@@ -11,6 +11,7 @@ export default function Athletes() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
+  const [weightClassFilter, setWeightClassFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -191,7 +192,18 @@ export default function Athletes() {
 
   const filteredAthletes = athletes
     .filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter((a) => genderFilter === 'all' || a.gender === genderFilter);
+    .filter((a) => genderFilter === 'all' || a.gender === genderFilter)
+    .filter((a) => weightClassFilter === 'all' || String(a.weight_category) === weightClassFilter);
+
+  const weightClassOptions = [...new Set(athletes.map((a) => String(a.weight_category)).filter(Boolean))]
+    .sort((a, b) => {
+      const aNum = parseFloat(a);
+      const bNum = parseFloat(b);
+      if (Number.isNaN(aNum) || Number.isNaN(bNum)) {
+        return a.localeCompare(b);
+      }
+      return aNum - bNum;
+    });
 
   return (
     <div>
@@ -382,7 +394,7 @@ export default function Athletes() {
       )}
 
       {/* Search and Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="relative md:col-span-2">
           <Search className="absolute left-4 top-4 text-gray-600" size={20} />
           <input
@@ -401,6 +413,18 @@ export default function Athletes() {
           <option value="all">All Categories</option>
           <option value="male">Men</option>
           <option value="female">Women</option>
+        </select>
+        <select
+          value={weightClassFilter}
+          onChange={(e) => setWeightClassFilter(e.target.value)}
+          className="input py-3"
+        >
+          <option value="all">All Weight Classes</option>
+          {weightClassOptions.map((weightClass) => (
+            <option key={weightClass} value={weightClass}>
+              {weightClass}kg
+            </option>
+          ))}
         </select>
       </div>
 
