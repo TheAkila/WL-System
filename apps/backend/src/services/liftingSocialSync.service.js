@@ -19,6 +19,8 @@ const parseSyncTargets = () => {
 
 const SYNC_TARGETS = parseSyncTargets();
 const API_KEY = process.env.SYNC_API_KEY || 'dev-key';
+const SYNC_RETRY_ATTEMPTS = Number(process.env.SYNC_RETRY_ATTEMPTS || 3);
+const SYNC_RETRY_DELAY_MS = Number(process.env.SYNC_RETRY_DELAY_MS || 300);
 
 const mapStatusToWebsite = (status) => {
   const normalized = (status || '').toLowerCase();
@@ -74,32 +76,57 @@ const getRefereeDecisionCode = (attempt) => {
     .join('');
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const postToWebsite = async (path, method = 'POST', payload = null) => {
   for (const target of SYNC_TARGETS) {
     const url = `${target}${path}`;
 
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
-        },
-        body: payload ? JSON.stringify(payload) : undefined,
-      });
+    for (let attempt = 1; attempt <= SYNC_RETRY_ATTEMPTS; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${API_KEY}`,
+          },
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.warn(`⚠️ Lifting Social sync failed [${method} ${url}]`, response.status, errorText);
-        continue;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(
+            `⚠️ Lifting Social sync failed [${method} ${url}] attempt ${attempt}/${SYNC_RETRY_ATTEMPTS}`,
+            response.status,
+            errorText
+          );
+
+          if (attempt < SYNC_RETRY_ATTEMPTS) {
+            const backoffMs = SYNC_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+            await sleep(backoffMs);
+            continue;
+          }
+
+          break;
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.warn(
+          `⚠️ Lifting Social sync error [${method} ${url}] attempt ${attempt}/${SYNC_RETRY_ATTEMPTS}`,
+          error.message
+        );
+
+        if (attempt < SYNC_RETRY_ATTEMPTS) {
+          const backoffMs = SYNC_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+          await sleep(backoffMs);
+          continue;
+        }
       }
-
-      return await response.json();
-    } catch (error) {
-      console.warn(`⚠️ Lifting Social sync error [${method} ${url}]`, error.message);
     }
   }
 
+  console.warn(`❌ Lifting Social sync exhausted for path ${path} across all targets`);
   return null;
 };
 
