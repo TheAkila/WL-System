@@ -1,6 +1,7 @@
 import { supabase } from '../services/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { syncAthleteStatus } from '../services/liftingSocialSync.service.js';
+import { updateAthletesFromFinal } from '../services/athleteService.js';
 
 // IWF Weight Categories (2024 Rules)
 const WEIGHT_CATEGORIES = {
@@ -59,6 +60,38 @@ export const getAthletes = async (req, res, next) => {
   try {
     const { sessionId, gender, weightCategory, limit = 100, offset = 0 } = req.query;
     const sessionIdFromParam = req.params.sessionId; // Support both route param and query param
+
+    // Best-effort sync: keep WL athletes aligned with latest final entry details
+    try {
+      const { data: athleteRegs } = await supabase
+        .from('athletes')
+        .select('registration_id')
+        .not('registration_id', 'is', null);
+
+      const registrationIds = [...new Set((athleteRegs || []).map((a) => a.registration_id).filter(Boolean))];
+
+      if (registrationIds.length > 0) {
+        const { data: finalApprovedRegs } = await supabase
+          .from('event_registrations')
+          .select('id')
+          .in('id', registrationIds)
+          .eq('status', 'final_approved');
+
+        for (const reg of finalApprovedRegs || []) {
+          const { data: finalAthletes } = await supabase
+            .from('preliminary_entry_athletes')
+            .select('*')
+            .eq('registration_id', reg.id)
+            .order('competitor_number', { ascending: true });
+
+          if (finalAthletes && finalAthletes.length > 0) {
+            await updateAthletesFromFinal(reg.id, finalAthletes);
+          }
+        }
+      }
+    } catch (syncError) {
+      console.warn('Final-entry sync skipped due to error:', syncError?.message || syncError);
+    }
     
     // Use optimized query with JOINs for related data
     let query = supabase.from('athletes').select('*, session:sessions(*), team:teams(*)');

@@ -376,7 +376,7 @@ router.put('/:competitionId/registrations/:registrationId', protect, authorize('
           }
           
           // Final entry approved
-          else if (updates.status === 'final_approved' && currentReg.status === 'final_pending') {
+          else if (updates.status === 'final_approved' && ['final_pending', 'final_submitted'].includes(currentReg.status)) {
             console.log('📧 Sending final entry approval email...');
             await sendCompetitionEmail.sendFinalEntryApproval({
               userEmail,
@@ -724,11 +724,11 @@ router.post('/:competitionId/registrations/approve-final', protect, authorize('a
           .from('event_registrations')
           .select('*')
           .eq('id', registrationId)
-          .eq('status', 'final_pending')
+          .in('status', ['final_pending', 'final_submitted'])
           .single();
         
         if (regError || !currentReg) {
-          console.log(`⏭️ Skipping ${registrationId} - not in final_pending status`);
+          console.log(`⏭️ Skipping ${registrationId} - not in final_pending/final_submitted status`);
           continue;
         }
         
@@ -1364,6 +1364,26 @@ router.put('/:competitionId/registrations/:registrationId/final-athletes', prote
             console.log(`✅ Updated athlete ${athlete.id}`);
           }
         }
+      }
+    }
+
+    // If final entry is already approved, propagate saved final values immediately to WL athletes.
+    const { data: registration } = await supabase
+      .from('event_registrations')
+      .select('status')
+      .eq('id', registrationId)
+      .single();
+
+    if (registration?.status === 'final_approved') {
+      const { data: latestFinalAthletes } = await supabase
+        .from('preliminary_entry_athletes')
+        .select('*')
+        .eq('registration_id', registrationId)
+        .order('competitor_number', { ascending: true });
+
+      if (latestFinalAthletes && latestFinalAthletes.length > 0) {
+        const updatedAthletes = await updateAthletesFromFinal(registrationId, latestFinalAthletes);
+        console.log(`✅ Immediate sync after final-athletes save: updated ${updatedAthletes.length} WL athletes`);
       }
     }
 

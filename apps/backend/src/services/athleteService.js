@@ -230,7 +230,7 @@ export async function updateAthletesFromFinal(registrationId, finalAthletes) {
   const updatedAthletes = [];
   
   // Get all athletes for this registration first
-  const { data: allRegistrationAthletes, error: allError } = await supabase
+  const { data: allRegistrationAthletesRaw, error: allError } = await supabase
     .from('athletes')
     .select('*')
     .eq('registration_id', registrationId);
@@ -240,7 +240,59 @@ export async function updateAthletesFromFinal(registrationId, finalAthletes) {
     return [];
   }
   
-  console.log(`Found ${allRegistrationAthletes?.length || 0} existing athletes for registration`);
+  let allRegistrationAthletes = allRegistrationAthletesRaw || [];
+
+  // Legacy fallback: some older athletes may not be linked by registration_id.
+  if (allRegistrationAthletes.length === 0) {
+    try {
+      const { data: registration } = await supabase
+        .from('event_registrations')
+        .select('club_name, competition_id')
+        .eq('id', registrationId)
+        .single();
+
+      if (registration?.club_name) {
+        const { data: team } = await supabase
+          .from('teams')
+          .select('id, name')
+          .ilike('name', registration.club_name.trim())
+          .limit(1)
+          .single();
+
+        if (team?.id) {
+          const { data: teamAthletes } = await supabase
+            .from('athletes')
+            .select('*')
+            .eq('team_id', team.id)
+            .order('created_at', { ascending: true });
+
+          const filteredTeamAthletes = (teamAthletes || []).filter((a) => {
+            if (!registration.competition_id) return true;
+            return !a.competition_id || a.competition_id === registration.competition_id;
+          });
+
+          if (filteredTeamAthletes.length > 0) {
+            console.log(`ℹ️ Using team-based fallback athletes for registration ${registrationId}: ${filteredTeamAthletes.length} found`);
+            allRegistrationAthletes = filteredTeamAthletes;
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.warn('Team fallback lookup failed:', fallbackError?.message || fallbackError);
+    }
+  }
+
+  console.log(`Found ${allRegistrationAthletes.length || 0} existing athletes for registration`);
+
+  const normalizeName = (value) => (value || '').toString().trim().toLowerCase();
+  const normalizeNameStrict = (value) => normalizeName(value).replace(/[^a-z0-9]/g, '');
+  const usedAthleteIds = new Set();
+  const sortedExistingAthletes = [...(allRegistrationAthletes || [])].sort((a, b) => {
+    const aNum = a.competitor_number ?? Number.MAX_SAFE_INTEGER;
+    const bNum = b.competitor_number ?? Number.MAX_SAFE_INTEGER;
+    if (aNum !== bNum) return aNum - bNum;
+    return normalizeName(a.name).localeCompare(normalizeName(b.name));
+  });
   
   for (const finalAthlete of finalAthletes) {
     // Try to match by competitor_number first
@@ -248,17 +300,41 @@ export async function updateAthletesFromFinal(registrationId, finalAthletes) {
     
     if (finalAthlete.competitor_number) {
       existingAthlete = allRegistrationAthletes?.find(a => 
+        !usedAthleteIds.has(a.id) && (
         a.competitor_number === parseInt(finalAthlete.competitor_number) ||
         a.competitor_number === finalAthlete.competitor_number
+        )
       );
     }
     
-    // If not found by competitor_number, try by name and weight category
+    // If not found by competitor number, try by normalized full name.
     if (!existingAthlete && finalAthlete.name) {
+      const normalizedFinalName = normalizeName(finalAthlete.name);
       existingAthlete = allRegistrationAthletes?.find(a => 
-        a.first_name === finalAthlete.name || 
-        `${a.first_name} ${a.last_name}`.toLowerCase() === finalAthlete.name.toLowerCase()
+        !usedAthleteIds.has(a.id) && (
+        normalizeName(a.name) === normalizedFinalName ||
+        normalizeName(`${a.first_name || ''} ${a.last_name || ''}`) === normalizedFinalName
+        )
       );
+    }
+
+    // Fallback for formatted initials/names (e.g. A.B.C Perera vs A B C Perera)
+    if (!existingAthlete && finalAthlete.name) {
+      const strictFinalName = normalizeNameStrict(finalAthlete.name);
+      existingAthlete = allRegistrationAthletes?.find(a =>
+        !usedAthleteIds.has(a.id) && (
+          normalizeNameStrict(a.name) === strictFinalName ||
+          normalizeNameStrict(`${a.first_name || ''} ${a.last_name || ''}`) === strictFinalName
+        )
+      );
+    }
+
+    // Final fallback: map by row order among remaining athletes for this registration.
+    if (!existingAthlete) {
+      existingAthlete = sortedExistingAthletes.find((a) => !usedAthleteIds.has(a.id)) || null;
+      if (existingAthlete) {
+        console.log(`⚠️ Fallback match by order: final athlete "${finalAthlete.name}" -> ${existingAthlete.name || existingAthlete.id}`);
+      }
     }
     
     if (!existingAthlete) {
@@ -267,17 +343,23 @@ export async function updateAthletesFromFinal(registrationId, finalAthletes) {
     }
     
     // Prepare update data from final entry (no openers - they're set at weigh-in)
+    const normalizedWeightCategory = finalAthlete.weight_category
+      ? finalAthlete.weight_category.toString().replace(/kg$/i, '').trim()
+      : existingAthlete.weight_category;
+
+    const parsedBestTotal = finalAthlete.best_total === null || finalAthlete.best_total === undefined || finalAthlete.best_total === ''
+      ? existingAthlete.best_total
+      : parseFloat(finalAthlete.best_total);
+
     const updateData = {
-      weight_category: finalAthlete.weight_category?.toString().replace(/kg$/i, '').trim(),
-      body_weight: finalAthlete.body_weight || existingAthlete.body_weight,
-      entry_total: finalAthlete.best_total || existingAthlete.entry_total,
-      best_total: finalAthlete.best_total || existingAthlete.best_total,
+      weight_category: normalizedWeightCategory,
+      body_weight: finalAthlete.body_weight ?? existingAthlete.body_weight,
+      best_total: Number.isNaN(parsedBestTotal) ? existingAthlete.best_total : parsedBestTotal,
       id_number: finalAthlete.id_number || existingAthlete.id_number,
       coach_name: finalAthlete.coach_name || existingAthlete.coach_name,
-      status: 'final_approved'
     };
     
-    console.log(`🔄 Updating athlete ${existingAthlete.first_name} ${existingAthlete.last_name}:`, updateData);
+    console.log(`🔄 Updating athlete ${existingAthlete.name || `${existingAthlete.first_name || ''} ${existingAthlete.last_name || ''}`.trim()}:`, updateData);
     
     const { data: updated, error: updateError } = await supabase
       .from('athletes')
@@ -291,8 +373,9 @@ export async function updateAthletesFromFinal(registrationId, finalAthletes) {
       continue;
     }
     
-    console.log(`✅ Updated athlete: ${updated.first_name} ${updated.last_name}`);
+    console.log(`✅ Updated athlete: ${updated.name || `${updated.first_name || ''} ${updated.last_name || ''}`.trim()}`);
     updatedAthletes.push(updated);
+    usedAthleteIds.add(existingAthlete.id);
     
     // Check if weight category changed - trigger session reassignment
     if (existingAthlete.weight_category !== updateData.weight_category) {

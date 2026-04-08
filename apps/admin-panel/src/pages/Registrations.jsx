@@ -1400,7 +1400,7 @@ export default function Registrations() {
                 </>
               ) : (
                 <>
-                  {selectedFinalReg?.status === 'final_pending' && (
+                  {['final_pending', 'final_submitted'].includes(selectedFinalReg?.status) && (
                     <>
                       <button
                         onClick={() => {
@@ -1653,7 +1653,7 @@ function FinalEntryRow({ reg, updateStatus, deleteRegistration, createAthlete, o
           >
             <FileText size={20} />
           </button>
-          {reg.status === 'final_pending' && (
+          {['final_pending', 'final_submitted'].includes(reg.status) && (
             <button
               onClick={() => updateStatus(reg.id, 'final_approved')}
               className="p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors shadow-sm"
