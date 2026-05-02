@@ -1,6 +1,23 @@
 import db from '../services/database.js';
 import { getCurrentEffectiveWeight } from './weightChange.service.js';
 
+function parseWeightCategoryValue(weightCategory) {
+  if (!weightCategory || typeof weightCategory !== 'string') {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const normalized = weightCategory.trim();
+  const isPlusClass = normalized.startsWith('+');
+  const numericPart = parseFloat(normalized.replace(/[^\d.]/g, ''));
+
+  if (Number.isNaN(numericPart)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  // Super-heavy classes (e.g. +109) should always come after capped classes.
+  return isPlusClass ? numericPart + 1000 : numericPart;
+}
+
 /**
  * Lifting Order Service
  * Calculates athlete lifting order according to IWF rules
@@ -30,6 +47,7 @@ export async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
         country,
         start_number,
         body_weight,
+        weight_category,
         opening_snatch,
         opening_clean_jerk,
         lot_number,
@@ -97,6 +115,7 @@ export async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
         country: athlete.country,
         start_number: athlete.start_number,
         body_weight: athlete.body_weight,
+        weight_category: athlete.weight_category,
         lot_number: athlete.lot_number,
         team_name: athlete.teams?.name,
         team_logo: athlete.teams?.logo_url,
@@ -122,17 +141,24 @@ export async function calculateLiftingOrder(sessionId, liftType = 'snatch') {
         return a.requested_weight - b.requested_weight;
       }
 
-      // Rule 2: If same weight, lowest lot number first
+      // Rule 2: If same weight, lower bodyweight class first
+      const aWeightCategory = parseWeightCategoryValue(a.weight_category);
+      const bWeightCategory = parseWeightCategoryValue(b.weight_category);
+      if (aWeightCategory !== bWeightCategory) {
+        return aWeightCategory - bWeightCategory;
+      }
+
+      // Rule 3: If same weight category, lowest lot number first
       if (a.lot_number !== b.lot_number) {
         return (a.lot_number || 999) - (b.lot_number || 999);
       }
 
-      // Rule 3: If same lot number, lower attempt number first
+      // Rule 4: If same lot number, lower attempt number first
       if (a.attempt_number !== b.attempt_number) {
         return a.attempt_number - b.attempt_number;
       }
 
-      // Rule 4: If same attempt number, failed attempts before successful
+      // Rule 5: If same attempt number, failed attempts before successful
       // (This handles cases where someone failed and is repeating)
       const aFailed = a.last_attempt_result === 'fail' ? 0 : 1;
       const bFailed = b.last_attempt_result === 'fail' ? 0 : 1;

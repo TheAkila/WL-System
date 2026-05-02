@@ -60,6 +60,23 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
     );
   };
 
+  const getWeightCategoryValue = (weightCategory) => {
+    if (!weightCategory || typeof weightCategory !== 'string') {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const normalized = weightCategory.trim();
+    const isPlusClass = normalized.startsWith('+');
+    const numericPart = parseFloat(normalized.replace(/[^\d.]/g, ''));
+
+    if (Number.isNaN(numericPart)) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    // Super-heavy classes (e.g. +109) should sort after capped classes.
+    return isPlusClass ? numericPart + 1000 : numericPart;
+  };
+
   // Calculate best lifts and totals for each athlete
   const calculateResults = (athletesData) => {
     return athletesData.map(athlete => {
@@ -217,14 +234,18 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
     // Sort by IWF rules:
     // 1. For current phase: same lift type comes first
     // 2. Lower weight first (ascending)
-    // 3. Lower attempt number first
-    // 4. Lower start number first (tie-breaker)
+    // 3. Lower weight class first when weight is equal
+    // 4. Lower attempt number first
+    // 5. Lower start number first (tie-breaker)
     pendingAttempts.sort((a, b) => {
       // If in specific phase, prioritize that lift type
       if (currentPhase === 'clean_jerk_active' || currentPhase === 'snatch_active') {
         // Same lift type, sort by weight
         if (a.liftType === b.liftType) {
           if (a.weight !== b.weight) return a.weight - b.weight;
+          const wcA = getWeightCategoryValue(a.athlete.weight_category);
+          const wcB = getWeightCategoryValue(b.athlete.weight_category);
+          if (wcA !== wcB) return wcA - wcB;
           if (a.attemptNumber !== b.attemptNumber) return a.attemptNumber - b.attemptNumber;
           return (a.athlete.start_number || 0) - (b.athlete.start_number || 0);
         }
@@ -239,6 +260,12 @@ export default function SessionSheet({ session: initialSession, onBack, onToggle
       // Lower weight first
       if (a.weight !== b.weight) {
         return a.weight - b.weight;
+      }
+      // Lower weight class first when requested weight is tied
+      const wcA = getWeightCategoryValue(a.athlete.weight_category);
+      const wcB = getWeightCategoryValue(b.athlete.weight_category);
+      if (wcA !== wcB) {
+        return wcA - wcB;
       }
       // Lower attempt number first
       if (a.attemptNumber !== b.attemptNumber) {
